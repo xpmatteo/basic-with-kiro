@@ -40,22 +40,32 @@ func NewEnvironment() *Environment {
 
 // GetVariable retrieves a variable value (case-insensitive)
 func (env *Environment) GetVariable(name string) Value {
-	key := strings.ToUpper(name)
+	key := env.normalizeVariableName(name)
 	if val, exists := env.Variables[key]; exists {
 		return val
 	}
 	
 	// BASIC initializes undefined numeric variables to 0 and string variables to empty string
-	if strings.HasSuffix(key, "$") {
-		return NewStringValue("")
-	}
-	return NewNumericValue(0)
+	return env.getDefaultValue(key)
 }
 
 // SetVariable sets a variable value (case-insensitive)
 func (env *Environment) SetVariable(name string, value Value) {
-	key := strings.ToUpper(name)
+	key := env.normalizeVariableName(name)
 	env.Variables[key] = value
+}
+
+// normalizeVariableName converts variable names to uppercase for case-insensitive storage
+func (env *Environment) normalizeVariableName(name string) string {
+	return strings.ToUpper(name)
+}
+
+// getDefaultValue returns the default value for an undefined variable
+func (env *Environment) getDefaultValue(normalizedName string) Value {
+	if strings.HasSuffix(normalizedName, "$") {
+		return NewStringValue("")
+	}
+	return NewNumericValue(0)
 }
 
 // Random returns a random number between 0 and 1
