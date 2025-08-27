@@ -11,228 +11,260 @@ import (
 func TestLiteralExpression_Evaluate(t *testing.T) {
 	env := runtime.NewEnvironment()
 
-	t.Run("numeric literal", func(t *testing.T) {
-		expr := &LiteralExpression{Value: runtime.NewNumericValue(42.5)}
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 42.5, result.NumValue)
-	})
+	testCases := []struct {
+		name          string
+		value         runtime.Value
+		expectedType  runtime.ValueType
+		expectedNum   float64
+		expectedStr   string
+	}{
+		{
+			name:         "numeric literal",
+			value:        runtime.NewNumericValue(42.5),
+			expectedType: runtime.NumericValue,
+			expectedNum:  42.5,
+		},
+		{
+			name:         "string literal",
+			value:        runtime.NewStringValue("hello"),
+			expectedType: runtime.StringValue,
+			expectedStr:  "hello",
+		},
+	}
 
-	t.Run("string literal", func(t *testing.T) {
-		expr := &LiteralExpression{Value: runtime.NewStringValue("hello")}
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.StringValue, result.Type)
-		assert.Equal(t, "hello", result.StrValue)
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			expr := &LiteralExpression{Value: tc.value}
+			result, err := expr.Evaluate(env)
+			
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedType, result.Type)
+			
+			if tc.expectedType == runtime.NumericValue {
+				assert.Equal(t, tc.expectedNum, result.NumValue)
+			} else {
+				assert.Equal(t, tc.expectedStr, result.StrValue)
+			}
+		})
+	}
 }
 
 func TestVariableExpression_Evaluate(t *testing.T) {
-	env := runtime.NewEnvironment()
+	testCases := []struct {
+		name         string
+		setupVar     string
+		setupValue   runtime.Value
+		queryVar     string
+		expectedType runtime.ValueType
+		expectedNum  float64
+		expectedStr  string
+	}{
+		{
+			name:         "existing numeric variable",
+			setupVar:     "X",
+			setupValue:   runtime.NewNumericValue(10),
+			queryVar:     "X",
+			expectedType: runtime.NumericValue,
+			expectedNum:  10.0,
+		},
+		{
+			name:         "existing string variable",
+			setupVar:     "NAME$",
+			setupValue:   runtime.NewStringValue("test"),
+			queryVar:     "NAME$",
+			expectedType: runtime.StringValue,
+			expectedStr:  "test",
+		},
+		{
+			name:         "uninitialized numeric variable defaults to zero",
+			queryVar:     "Y",
+			expectedType: runtime.NumericValue,
+			expectedNum:  0.0,
+		},
+		{
+			name:         "uninitialized string variable defaults to empty string",
+			queryVar:     "EMPTY$",
+			expectedType: runtime.StringValue,
+			expectedStr:  "",
+		},
+		{
+			name:         "case insensitive variable names",
+			setupVar:     "test",
+			setupValue:   runtime.NewNumericValue(5),
+			queryVar:     "TEST",
+			expectedType: runtime.NumericValue,
+			expectedNum:  5.0,
+		},
+	}
 
-	t.Run("existing numeric variable", func(t *testing.T) {
-		env.SetVariable("X", runtime.NewNumericValue(10))
-		expr := &VariableExpression{Name: "X"}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 10.0, result.NumValue)
-	})
-
-	t.Run("existing string variable", func(t *testing.T) {
-		env.SetVariable("NAME$", runtime.NewStringValue("test"))
-		expr := &VariableExpression{Name: "NAME$"}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.StringValue, result.Type)
-		assert.Equal(t, "test", result.StrValue)
-	})
-
-	t.Run("uninitialized numeric variable defaults to zero", func(t *testing.T) {
-		expr := &VariableExpression{Name: "Y"}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 0.0, result.NumValue)
-	})
-
-	t.Run("uninitialized string variable defaults to empty string", func(t *testing.T) {
-		expr := &VariableExpression{Name: "EMPTY$"}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.StringValue, result.Type)
-		assert.Equal(t, "", result.StrValue)
-	})
-
-	t.Run("case insensitive variable names", func(t *testing.T) {
-		env.SetVariable("test", runtime.NewNumericValue(5))
-		expr := &VariableExpression{Name: "TEST"}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, 5.0, result.NumValue)
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			env := runtime.NewEnvironment()
+			
+			// Setup variable if specified
+			if tc.setupVar != "" {
+				env.SetVariable(tc.setupVar, tc.setupValue)
+			}
+			
+			expr := &VariableExpression{Name: tc.queryVar}
+			result, err := expr.Evaluate(env)
+			
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedType, result.Type)
+			
+			if tc.expectedType == runtime.NumericValue {
+				assert.Equal(t, tc.expectedNum, result.NumValue)
+			} else {
+				assert.Equal(t, tc.expectedStr, result.StrValue)
+			}
+		})
+	}
 }
 
-func TestBinaryExpression_Addition(t *testing.T) {
+func TestBinaryExpression_Arithmetic(t *testing.T) {
 	env := runtime.NewEnvironment()
 
-	t.Run("numeric addition", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(5)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "+", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 8.0, result.NumValue)
-	})
+	testCases := []struct {
+		name         string
+		left         runtime.Value
+		operator     string
+		right        runtime.Value
+		expectedType runtime.ValueType
+		expectedNum  float64
+		expectedStr  string
+		shouldError  bool
+		errorContains string
+	}{
+		// Addition tests
+		{
+			name:         "numeric addition",
+			left:         runtime.NewNumericValue(5),
+			operator:     "+",
+			right:        runtime.NewNumericValue(3),
+			expectedType: runtime.NumericValue,
+			expectedNum:  8.0,
+		},
+		{
+			name:         "string concatenation",
+			left:         runtime.NewStringValue("hello"),
+			operator:     "+",
+			right:        runtime.NewStringValue(" world"),
+			expectedType: runtime.StringValue,
+			expectedStr:  "hello world",
+		},
+		{
+			name:         "mixed type addition - number and convertible string",
+			left:         runtime.NewNumericValue(5),
+			operator:     "+",
+			right:        runtime.NewStringValue("3"),
+			expectedType: runtime.NumericValue,
+			expectedNum:  8.0,
+		},
+		// Subtraction tests
+		{
+			name:         "numeric subtraction",
+			left:         runtime.NewNumericValue(10),
+			operator:     "-",
+			right:        runtime.NewNumericValue(3),
+			expectedType: runtime.NumericValue,
+			expectedNum:  7.0,
+		},
+		{
+			name:          "string subtraction should fail",
+			left:          runtime.NewStringValue("hello"),
+			operator:      "-",
+			right:         runtime.NewStringValue("world"),
+			shouldError:   true,
+			errorContains: "cannot subtract strings",
+		},
+		// Multiplication tests
+		{
+			name:         "numeric multiplication",
+			left:         runtime.NewNumericValue(4),
+			operator:     "*",
+			right:        runtime.NewNumericValue(3),
+			expectedType: runtime.NumericValue,
+			expectedNum:  12.0,
+		},
+		{
+			name:          "string multiplication should fail",
+			left:          runtime.NewStringValue("hello"),
+			operator:      "*",
+			right:         runtime.NewNumericValue(3),
+			shouldError:   true,
+			errorContains: "cannot multiply strings",
+		},
+		// Division tests
+		{
+			name:         "numeric division",
+			left:         runtime.NewNumericValue(15),
+			operator:     "/",
+			right:        runtime.NewNumericValue(3),
+			expectedType: runtime.NumericValue,
+			expectedNum:  5.0,
+		},
+		{
+			name:          "division by zero",
+			left:          runtime.NewNumericValue(10),
+			operator:      "/",
+			right:         runtime.NewNumericValue(0),
+			shouldError:   true,
+			errorContains: "division by zero",
+		},
+		// Power tests
+		{
+			name:         "numeric exponentiation",
+			left:         runtime.NewNumericValue(2),
+			operator:     "^",
+			right:        runtime.NewNumericValue(3),
+			expectedType: runtime.NumericValue,
+			expectedNum:  8.0,
+		},
+		{
+			name:          "string power should fail",
+			left:          runtime.NewStringValue("hello"),
+			operator:      "^",
+			right:         runtime.NewNumericValue(2),
+			shouldError:   true,
+			errorContains: "cannot raise strings to power",
+		},
+		// Invalid operator test
+		{
+			name:          "unsupported operator",
+			left:          runtime.NewNumericValue(5),
+			operator:      "%",
+			right:         runtime.NewNumericValue(3),
+			shouldError:   true,
+			errorContains: "unsupported operator",
+		},
+	}
 
-	t.Run("string concatenation", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewStringValue("hello")}
-		right := &LiteralExpression{Value: runtime.NewStringValue(" world")}
-		expr := &BinaryExpression{Left: left, Operator: "+", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.StringValue, result.Type)
-		assert.Equal(t, "hello world", result.StrValue)
-	})
-
-	t.Run("mixed type addition - number and convertible string", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(5)}
-		right := &LiteralExpression{Value: runtime.NewStringValue("3")}
-		expr := &BinaryExpression{Left: left, Operator: "+", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 8.0, result.NumValue)
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			left := &LiteralExpression{Value: tc.left}
+			right := &LiteralExpression{Value: tc.right}
+			expr := &BinaryExpression{Left: left, Operator: tc.operator, Right: right}
+			
+			result, err := expr.Evaluate(env)
+			
+			if tc.shouldError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errorContains)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expectedType, result.Type)
+				
+				if tc.expectedType == runtime.NumericValue {
+					assert.Equal(t, tc.expectedNum, result.NumValue)
+				} else {
+					assert.Equal(t, tc.expectedStr, result.StrValue)
+				}
+			}
+		})
+	}
 }
 
-func TestBinaryExpression_Subtraction(t *testing.T) {
-	env := runtime.NewEnvironment()
 
-	t.Run("numeric subtraction", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(10)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "-", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 7.0, result.NumValue)
-	})
-
-	t.Run("string subtraction should fail", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewStringValue("hello")}
-		right := &LiteralExpression{Value: runtime.NewStringValue("world")}
-		expr := &BinaryExpression{Left: left, Operator: "-", Right: right}
-		
-		_, err := expr.Evaluate(env)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot subtract strings")
-	})
-}
-
-func TestBinaryExpression_Multiplication(t *testing.T) {
-	env := runtime.NewEnvironment()
-
-	t.Run("numeric multiplication", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(4)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "*", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 12.0, result.NumValue)
-	})
-
-	t.Run("string multiplication should fail", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewStringValue("hello")}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "*", Right: right}
-		
-		_, err := expr.Evaluate(env)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot multiply strings")
-	})
-}
-
-func TestBinaryExpression_Division(t *testing.T) {
-	env := runtime.NewEnvironment()
-
-	t.Run("numeric division", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(15)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "/", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 5.0, result.NumValue)
-	})
-
-	t.Run("division by zero", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(10)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(0)}
-		expr := &BinaryExpression{Left: left, Operator: "/", Right: right}
-		
-		_, err := expr.Evaluate(env)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "division by zero")
-	})
-}
-
-func TestBinaryExpression_Power(t *testing.T) {
-	env := runtime.NewEnvironment()
-
-	t.Run("numeric exponentiation", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(2)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "^", Right: right}
-		
-		result, err := expr.Evaluate(env)
-		
-		require.NoError(t, err)
-		assert.Equal(t, runtime.NumericValue, result.Type)
-		assert.Equal(t, 8.0, result.NumValue)
-	})
-
-	t.Run("string power should fail", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewStringValue("hello")}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(2)}
-		expr := &BinaryExpression{Left: left, Operator: "^", Right: right}
-		
-		_, err := expr.Evaluate(env)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "cannot raise strings to power")
-	})
-}
 
 func TestBinaryExpression_OperatorPrecedence(t *testing.T) {
 	env := runtime.NewEnvironment()
@@ -429,57 +461,62 @@ func TestComplexNestedExpressions(t *testing.T) {
 	})
 }
 
-func TestInvalidOperator(t *testing.T) {
-	env := runtime.NewEnvironment()
 
-	t.Run("unsupported operator", func(t *testing.T) {
-		left := &LiteralExpression{Value: runtime.NewNumericValue(5)}
-		right := &LiteralExpression{Value: runtime.NewNumericValue(3)}
-		expr := &BinaryExpression{Left: left, Operator: "%", Right: right}
-		
-		_, err := expr.Evaluate(env)
-		
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "unsupported operator")
-	})
-}
 
 // Tests for helper functions and refactored functionality
 
 func TestHelperFunctions(t *testing.T) {
-	t.Run("NewLiteralExpression", func(t *testing.T) {
-		value := runtime.NewNumericValue(42)
-		expr := NewLiteralExpression(value)
-		
-		assert.NotNil(t, expr)
-		assert.Equal(t, value, expr.Value)
-	})
+	testCases := []struct {
+		name string
+		test func(t *testing.T)
+	}{
+		{
+			name: "NewLiteralExpression",
+			test: func(t *testing.T) {
+				value := runtime.NewNumericValue(42)
+				expr := NewLiteralExpression(value)
+				
+				assert.NotNil(t, expr)
+				assert.Equal(t, value, expr.Value)
+			},
+		},
+		{
+			name: "NewVariableExpression",
+			test: func(t *testing.T) {
+				expr := NewVariableExpression("TEST")
+				
+				assert.NotNil(t, expr)
+				assert.Equal(t, "TEST", expr.Name)
+			},
+		},
+		{
+			name: "NewBinaryExpression",
+			test: func(t *testing.T) {
+				left := NewLiteralExpression(runtime.NewNumericValue(5))
+				right := NewLiteralExpression(runtime.NewNumericValue(3))
+				expr := NewBinaryExpression(left, OpAdd, right)
+				
+				assert.NotNil(t, expr)
+				assert.Equal(t, left, expr.Left)
+				assert.Equal(t, OpAdd, expr.Operator)
+				assert.Equal(t, right, expr.Right)
+			},
+		},
+		{
+			name: "NewParenthesesExpression",
+			test: func(t *testing.T) {
+				inner := NewLiteralExpression(runtime.NewNumericValue(42))
+				expr := NewParenthesesExpression(inner)
+				
+				assert.NotNil(t, expr)
+				assert.Equal(t, inner, expr.Expression)
+			},
+		},
+	}
 
-	t.Run("NewVariableExpression", func(t *testing.T) {
-		expr := NewVariableExpression("TEST")
-		
-		assert.NotNil(t, expr)
-		assert.Equal(t, "TEST", expr.Name)
-	})
-
-	t.Run("NewBinaryExpression", func(t *testing.T) {
-		left := NewLiteralExpression(runtime.NewNumericValue(5))
-		right := NewLiteralExpression(runtime.NewNumericValue(3))
-		expr := NewBinaryExpression(left, OpAdd, right)
-		
-		assert.NotNil(t, expr)
-		assert.Equal(t, left, expr.Left)
-		assert.Equal(t, OpAdd, expr.Operator)
-		assert.Equal(t, right, expr.Right)
-	})
-
-	t.Run("NewParenthesesExpression", func(t *testing.T) {
-		inner := NewLiteralExpression(runtime.NewNumericValue(42))
-		expr := NewParenthesesExpression(inner)
-		
-		assert.NotNil(t, expr)
-		assert.Equal(t, inner, expr.Expression)
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, tc.test)
+	}
 }
 
 func TestOperatorConstants(t *testing.T) {
