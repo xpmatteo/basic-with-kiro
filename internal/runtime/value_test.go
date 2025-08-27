@@ -2,65 +2,61 @@ package runtime
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewNumericValue(t *testing.T) {
 	val := NewNumericValue(42.5)
-	if val.Type != NumericValue {
-		t.Errorf("Expected NumericValue, got %v", val.Type)
-	}
-	if val.NumValue != 42.5 {
-		t.Errorf("Expected 42.5, got %v", val.NumValue)
-	}
+	assert.Equal(t, NumericValue, val.Type)
+	assert.Equal(t, 42.5, val.NumValue)
 }
 
 func TestNewStringValue(t *testing.T) {
 	val := NewStringValue("hello")
-	if val.Type != StringValue {
-		t.Errorf("Expected StringValue, got %v", val.Type)
-	}
-	if val.StrValue != "hello" {
-		t.Errorf("Expected 'hello', got %v", val.StrValue)
-	}
+	assert.Equal(t, StringValue, val.Type)
+	assert.Equal(t, "hello", val.StrValue)
 }
 
 func TestValueString(t *testing.T) {
 	numVal := NewNumericValue(42)
-	if numVal.String() != "42" {
-		t.Errorf("Expected '42', got '%s'", numVal.String())
-	}
+	assert.Equal(t, "42", numVal.String())
 
 	strVal := NewStringValue("test")
-	if strVal.String() != "test" {
-		t.Errorf("Expected 'test', got '%s'", strVal.String())
-	}
+	assert.Equal(t, "test", strVal.String())
 }
 
 func TestValueToNumber(t *testing.T) {
 	// Test numeric value
 	numVal := NewNumericValue(42.5)
 	result, err := numVal.ToNumber()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if result != 42.5 {
-		t.Errorf("Expected 42.5, got %v", result)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 42.5, result)
 
 	// Test string value that can be converted
 	strVal := NewStringValue("123.45")
 	result, err = strVal.ToNumber()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-	if result != 123.45 {
-		t.Errorf("Expected 123.45, got %v", result)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 123.45, result)
 
 	// Test string value that cannot be converted
 	invalidStrVal := NewStringValue("hello")
 	_, err = invalidStrVal.ToNumber()
-	if err == nil {
-		t.Error("Expected error for invalid string conversion")
-	}
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot convert string 'hello' to number")
+}
+
+func TestValueToString(t *testing.T) {
+	// Test numeric value conversion
+	numVal := NewNumericValue(42.5)
+	assert.Equal(t, "42.5", numVal.ToString())
+
+	// Test string value conversion
+	strVal := NewStringValue("test")
+	assert.Equal(t, "test", strVal.ToString())
+
+	// Test integer conversion (should not show decimal)
+	intVal := NewNumericValue(42)
+	assert.Equal(t, "42", intVal.ToString())
 }
