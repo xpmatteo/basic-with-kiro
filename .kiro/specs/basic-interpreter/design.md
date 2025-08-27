@@ -45,6 +45,12 @@ if expected != actual {
 - **Standard Library Only**: Core implementation uses only Go standard library
 - **testify**: Only external dependency, used exclusively for testing
 
+### Development Guidelines
+- **Git Commits**: When committing code changes, always include Kiro as co-author using:
+  ```
+  Co-authored-by: Kiro <kiro@kiro.ai>
+  ```
+
 ## Architecture
 
 ```mermaid
