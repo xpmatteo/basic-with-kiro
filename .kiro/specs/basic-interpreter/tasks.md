@@ -137,50 +137,50 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 6. Implement control flow statements using TDD
-- [ ] 6.1 Write GOTO statement tests first
+- [x] 6. Implement control flow statements using TDD
+- [x] 6.1 Write GOTO statement tests first
   - Write failing tests for GotoStatement struct and program counter modification
   - Write tests for validation of target line number existence
   - Write tests for error cases: invalid line numbers, missing targets
   - Write tests for forward and backward jumps
   - _Requirements: 3.1, 3.4, TDD Requirements 3.1_
 
-- [ ] 6.2 Implement GOTO statement to pass tests
+- [x] 6.2 Implement GOTO statement to pass tests
   - Create GotoStatement struct with program counter modification
   - Implement line number validation as defined by tests
   - Add proper error handling for invalid jump targets
   - Verify all GOTO statement tests pass
   - _Requirements: 3.1, 3.4, TDD Requirements 3.1_
 
-- [ ] 6.3 Write IF-THEN statement tests first
+- [x] 6.3 Write IF-THEN statement tests first
   - Write failing tests for IfStatement struct with condition evaluation
   - Write tests for all comparison operators (=, <, >, <=, >=, <>)
   - Write tests for conditional execution logic and branching
   - Write tests for edge cases: type mismatches, complex conditions
   - _Requirements: 3.2, TDD Requirements 3.2_
 
-- [ ] 6.4 Implement IF-THEN statement to pass tests
+- [x] 6.4 Implement IF-THEN statement to pass tests
   - Create IfStatement struct with condition evaluation functionality
   - Implement comparison operators and conditional execution as required by tests
   - Add proper type handling for condition evaluation
   - Verify all IF-THEN statement tests pass
   - _Requirements: 3.2, TDD Requirements 3.2_
 
-- [ ] 6.5 Write FOR-NEXT loop tests first
+- [x] 6.5 Write FOR-NEXT loop tests first
   - Write failing tests for ForStatement and NextStatement structs
   - Write tests for ForLoopState tracking and nested loop handling
   - Write tests for loop variable increment and termination logic
   - Write tests for error cases: missing NEXT, invalid loop bounds
   - _Requirements: 3.3, 3.5, TDD Requirements 3.3_
 
-- [ ] 6.6 Implement FOR-NEXT loops to pass tests
+- [x] 6.6 Implement FOR-NEXT loops to pass tests
   - Create ForStatement and NextStatement structs with loop logic
   - Implement ForLoopState tracking in Environment for nested loops
   - Add loop variable management and termination as defined by tests
   - Verify all FOR-NEXT loop tests pass
   - _Requirements: 3.3, 3.5, TDD Requirements 3.3_
 
-- [ ] 6.7 Refactor control flow statements
+- [x] 6.7 Refactor control flow statements
   - Improve control flow implementations while keeping all tests green
   - Extract common patterns and optimize program counter management
   - Ensure clean separation between control flow logic and execution state

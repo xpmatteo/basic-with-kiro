@@ -3,6 +3,7 @@ package ast
 import (
 	"basic-interpreter/internal/runtime"
 	"fmt"
+	"strings"
 )
 
 // Operator constants for better maintainability and type safety
@@ -352,6 +353,284 @@ func NewInputStatementWithPrompt(prompt, variable string, input InputReader, out
 	}
 }
 
+// NewGotoStatement creates a new GOTO statement with the given line number and program reference
+func NewGotoStatement(lineNumber int, program *Program) *GotoStatement {
+	return &GotoStatement{
+		LineNumber: lineNumber,
+		Program:    program,
+	}
+}
+
+// ComparisonExpression represents a comparison between two expressions
+type ComparisonExpression struct {
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+// Evaluate performs the comparison operation and returns a boolean result as a numeric value
+// In BASIC, true is represented as -1 and false as 0
+func (c *ComparisonExpression) Evaluate(env *runtime.Environment) (runtime.Value, error) {
+	// Evaluate left operand
+	leftVal, err := c.Left.Evaluate(env)
+	if err != nil {
+		return runtime.Value{}, fmt.Errorf("error evaluating left operand in comparison: %w", err)
+	}
+
+	// Evaluate right operand
+	rightVal, err := c.Right.Evaluate(env)
+	if err != nil {
+		return runtime.Value{}, fmt.Errorf("error evaluating right operand in comparison: %w", err)
+	}
+
+	// Perform the comparison
+	result, err := c.performComparison(leftVal, rightVal)
+	if err != nil {
+		return runtime.Value{}, err
+	}
+
+	// Convert boolean result to BASIC numeric value (true = -1, false = 0)
+	if result {
+		return runtime.NewNumericValue(-1), nil
+	}
+	return runtime.NewNumericValue(0), nil
+}
+
+// performComparison performs the actual comparison based on the operator
+func (c *ComparisonExpression) performComparison(left, right runtime.Value) (bool, error) {
+	// Check for type compatibility
+	if left.Type != right.Type {
+		return false, fmt.Errorf("type mismatch in comparison: cannot compare %v with %v", left.Type, right.Type)
+	}
+
+	// Use a more efficient approach for comparison operations
+	switch c.Operator {
+	case "=":
+		return c.compareEqual(left, right), nil
+	case "<>":
+		return !c.compareEqual(left, right), nil
+	case "<":
+		return c.compareValues(left, right, func(a, b float64) bool { return a < b }, func(a, b string) bool { return a < b })
+	case ">":
+		return c.compareValues(left, right, func(a, b float64) bool { return a > b }, func(a, b string) bool { return a > b })
+	case "<=":
+		return c.compareValues(left, right, func(a, b float64) bool { return a <= b }, func(a, b string) bool { return a <= b })
+	case ">=":
+		return c.compareValues(left, right, func(a, b float64) bool { return a >= b }, func(a, b string) bool { return a >= b })
+	default:
+		return false, fmt.Errorf("unsupported comparison operator: %s", c.Operator)
+	}
+}
+
+// compareEqual checks if two values are equal
+func (c *ComparisonExpression) compareEqual(left, right runtime.Value) bool {
+	if left.Type == runtime.NumericValue {
+		return left.NumValue == right.NumValue
+	}
+	return left.StrValue == right.StrValue
+}
+
+// compareValues is a generic comparison function that handles both numeric and string comparisons
+func (c *ComparisonExpression) compareValues(left, right runtime.Value, numericCompare func(float64, float64) bool, stringCompare func(string, string) bool) (bool, error) {
+	if left.Type == runtime.NumericValue {
+		return numericCompare(left.NumValue, right.NumValue), nil
+	}
+	return stringCompare(left.StrValue, right.StrValue), nil
+}
+
+// IfStatement represents an IF-THEN conditional statement
+type IfStatement struct {
+	Condition     Expression
+	ThenStatement Statement
+}
+
+// Execute performs the conditional execution by evaluating the condition and executing the THEN statement if true
+func (i *IfStatement) Execute(env *runtime.Environment) error {
+	// Evaluate the condition
+	conditionValue, err := i.Condition.Evaluate(env)
+	if err != nil {
+		return fmt.Errorf("error evaluating IF condition: %w", err)
+	}
+
+	// Check if condition is true (non-zero for numeric values, non-empty for strings)
+	if i.isConditionTrue(conditionValue) {
+		// Execute the THEN statement
+		if err := i.ThenStatement.Execute(env); err != nil {
+			return fmt.Errorf("error executing THEN statement: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// isConditionTrue determines if a condition value should be considered true
+// In BASIC, zero is false, non-zero is true for numbers; empty string is false, non-empty is true for strings
+func (i *IfStatement) isConditionTrue(value runtime.Value) bool {
+	if value.Type == runtime.NumericValue {
+		return value.NumValue != 0
+	}
+	return value.StrValue != ""
+}
+
+// NewComparisonExpression creates a new comparison expression with the given operands and operator
+func NewComparisonExpression(left Expression, operator string, right Expression) *ComparisonExpression {
+	return &ComparisonExpression{
+		Left:     left,
+		Operator: operator,
+		Right:    right,
+	}
+}
+
+// NewIfStatement creates a new IF-THEN statement with the given condition and THEN statement
+func NewIfStatement(condition Expression, thenStatement Statement) *IfStatement {
+	return &IfStatement{
+		Condition:     condition,
+		ThenStatement: thenStatement,
+	}
+}
+
+// ForStatement represents a FOR loop statement
+type ForStatement struct {
+	Variable  string
+	StartExpr Expression
+	EndExpr   Expression
+	StepExpr  Expression
+	LineNum   int
+}
+
+// Execute initializes a FOR loop by evaluating expressions and setting up loop state
+func (f *ForStatement) Execute(env *runtime.Environment) error {
+	// Validate variable name
+	if err := ValidateVariableName(f.Variable); err != nil {
+		return err
+	}
+
+	// Evaluate expressions using helper function
+	startValue, err := EvaluateNumericExpression(f.StartExpr, env, "FOR start")
+	if err != nil {
+		return err
+	}
+
+	endValue, err := EvaluateNumericExpression(f.EndExpr, env, "FOR end")
+	if err != nil {
+		return err
+	}
+
+	stepValue, err := EvaluateNumericExpression(f.StepExpr, env, "FOR step")
+	if err != nil {
+		return err
+	}
+
+	// Validate step is not zero
+	if stepValue == 0 {
+		return fmt.Errorf("FOR step cannot be zero")
+	}
+
+	// Set the loop variable to the start value
+	env.SetVariable(f.Variable, runtime.NewNumericValue(startValue))
+
+	// Create and push loop state onto the stack
+	loopState := runtime.ForLoopState{
+		Variable: f.Variable,
+		Current:  startValue,
+		End:      endValue,
+		Step:     stepValue,
+		LineNum:  f.LineNum,
+	}
+
+	env.ForLoops = append(env.ForLoops, loopState)
+
+	return nil
+}
+
+// NextStatement represents a NEXT statement that continues or terminates a FOR loop
+type NextStatement struct {
+	Variable string
+}
+
+// Execute processes a NEXT statement by incrementing the loop variable and checking termination
+func (n *NextStatement) Execute(env *runtime.Environment) error {
+	// Check if there are any FOR loops on the stack
+	if len(env.ForLoops) == 0 {
+		return fmt.Errorf("NEXT without FOR")
+	}
+
+	// Find the matching FOR loop
+	loopIndex := n.findMatchingLoop(env)
+	if loopIndex == -1 {
+		if n.Variable == "" {
+			return fmt.Errorf("NEXT without FOR")
+		}
+		return fmt.Errorf("NEXT %s without matching FOR %s", n.Variable, n.Variable)
+	}
+
+	// Get the loop state
+	loop := &env.ForLoops[loopIndex]
+
+	// Increment the loop variable
+	newValue := loop.Current + loop.Step
+	env.SetVariable(loop.Variable, runtime.NewNumericValue(newValue))
+	loop.Current = newValue
+
+	// Check if loop should continue
+	if n.shouldContinueLoop(loop) {
+		// Continue loop - set program counter to loop start
+		SetProgramCounter(env, loop.LineNum)
+	} else {
+		// Loop completed - remove from stack
+		env.ForLoops = append(env.ForLoops[:loopIndex], env.ForLoops[loopIndex+1:]...)
+	}
+
+	return nil
+}
+
+// findMatchingLoop finds the FOR loop that matches this NEXT statement
+func (n *NextStatement) findMatchingLoop(env *runtime.Environment) int {
+	if n.Variable == "" {
+		// Empty variable name matches the innermost (last) loop
+		return len(env.ForLoops) - 1
+	}
+
+	// Search from innermost to outermost for matching variable name
+	normalizedVar := NormalizeVariableName(n.Variable)
+	for i := len(env.ForLoops) - 1; i >= 0; i-- {
+		if NormalizeVariableName(env.ForLoops[i].Variable) == normalizedVar {
+			return i
+		}
+	}
+
+	return -1 // No matching loop found
+}
+
+// shouldContinueLoop determines if the loop should continue based on step direction and bounds
+func (n *NextStatement) shouldContinueLoop(loop *runtime.ForLoopState) bool {
+	if loop.Step > 0 {
+		// Positive step: continue if current <= end
+		return loop.Current <= loop.End
+	} else {
+		// Negative step: continue if current >= end
+		return loop.Current >= loop.End
+	}
+}
+
+// NewForStatement creates a new FOR statement with the given parameters
+func NewForStatement(variable string, startExpr, endExpr, stepExpr Expression, lineNum int) *ForStatement {
+	return &ForStatement{
+		Variable:  variable,
+		StartExpr: startExpr,
+		EndExpr:   endExpr,
+		StepExpr:  stepExpr,
+		LineNum:   lineNum,
+	}
+}
+
+// NewNextStatement creates a new NEXT statement with the given variable
+func NewNextStatement(variable string) *NextStatement {
+	return &NextStatement{
+		Variable: variable,
+	}
+}
+
 // Validation helper functions
 
 // ValidateVariableName validates that a variable name is not empty
@@ -365,4 +644,66 @@ func ValidateVariableName(name string) error {
 // IsStringVariable checks if a variable name indicates a string variable (ends with $)
 func IsStringVariable(name string) bool {
 	return len(name) > 0 && name[len(name)-1] == '$'
+}
+
+// Program counter management helper functions
+
+// SetProgramCounter sets the program counter to the specified line number
+// This centralizes program counter management for control flow statements
+func SetProgramCounter(env *runtime.Environment, lineNumber int) {
+	env.ProgramCounter = lineNumber
+}
+
+// ValidateLineNumber checks if a line number exists in the program
+func ValidateLineNumber(program *Program, lineNumber int) error {
+	if program == nil {
+		return fmt.Errorf("program reference is nil")
+	}
+	
+	if _, exists := program.Lines[lineNumber]; !exists {
+		return fmt.Errorf("line number %d does not exist", lineNumber)
+	}
+	
+	return nil
+}
+
+// Expression evaluation helper functions
+
+// EvaluateNumericExpression evaluates an expression and ensures it returns a numeric value
+func EvaluateNumericExpression(expr Expression, env *runtime.Environment, context string) (float64, error) {
+	value, err := expr.Evaluate(env)
+	if err != nil {
+		return 0, fmt.Errorf("error evaluating %s expression: %w", context, err)
+	}
+	
+	if value.Type != runtime.NumericValue {
+		return 0, fmt.Errorf("%s value must be numeric", context)
+	}
+	
+	return value.NumValue, nil
+}
+
+// Variable name normalization helper
+
+// NormalizeVariableName converts variable names to uppercase for case-insensitive operations
+func NormalizeVariableName(name string) string {
+	return strings.ToUpper(name)
+}
+
+// GotoStatement represents a GOTO statement that jumps to a specific line number
+type GotoStatement struct {
+	LineNumber int
+	Program    *Program
+}
+
+// Execute performs the GOTO operation by setting the program counter to the target line
+func (g *GotoStatement) Execute(env *runtime.Environment) error {
+	// Validate that the target line number exists in the program
+	if err := ValidateLineNumber(g.Program, g.LineNumber); err != nil {
+		return err
+	}
+	
+	// Set the program counter to the target line number
+	SetProgramCounter(env, g.LineNumber)
+	return nil
 }
