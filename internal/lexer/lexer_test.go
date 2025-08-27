@@ -2,7 +2,17 @@ package lexer
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+// assertTokensEqual is a helper function to compare expected and actual tokens
+func assertTokensEqual(t *testing.T, expected, actual Token, index int) {
+	assert.Equal(t, expected.Type, actual.Type, "token[%d].Type", index)
+	assert.Equal(t, expected.Value, actual.Value, "token[%d].Value", index)
+	assert.Equal(t, expected.Line, actual.Line, "token[%d].Line", index)
+	assert.Equal(t, expected.Column, actual.Column, "token[%d].Column", index)
+}
 
 // TestTokenType_String tests that TokenType has proper string representation
 func TestTokenType_String(t *testing.T) {
@@ -48,9 +58,7 @@ func TestTokenType_String(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
 			result := tt.tokenType.String()
-			if result != tt.expected {
-				t.Errorf("TokenType.String() = %v, want %v", result, tt.expected)
-			}
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -64,18 +72,10 @@ func TestToken_Creation(t *testing.T) {
 		Column: 1,
 	}
 
-	if token.Type != NUMBER {
-		t.Errorf("Token.Type = %v, want %v", token.Type, NUMBER)
-	}
-	if token.Value != "123" {
-		t.Errorf("Token.Value = %v, want %v", token.Value, "123")
-	}
-	if token.Line != 1 {
-		t.Errorf("Token.Line = %v, want %v", token.Line, 1)
-	}
-	if token.Column != 1 {
-		t.Errorf("Token.Column = %v, want %v", token.Column, 1)
-	}
+	assert.Equal(t, NUMBER, token.Type)
+	assert.Equal(t, "123", token.Value)
+	assert.Equal(t, 1, token.Line)
+	assert.Equal(t, 1, token.Column)
 }
 
 // TestLexer_Numbers tests tokenizing various number formats
@@ -135,18 +135,7 @@ func TestLexer_Numbers(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -208,18 +197,7 @@ func TestLexer_Strings(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -282,18 +260,7 @@ func TestLexer_Identifiers(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -385,18 +352,7 @@ func TestLexer_Keywords(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -460,18 +416,7 @@ func TestLexer_Operators(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -528,18 +473,7 @@ func TestLexer_ErrorCases(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -612,18 +546,7 @@ func TestLexer_PositionTracking(t *testing.T) {
 			
 			for i, expectedToken := range tt.expected {
 				token := lexer.NextToken()
-				if token.Type != expectedToken.Type {
-					t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-				}
-				if token.Value != expectedToken.Value {
-					t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-				}
-				if token.Line != expectedToken.Line {
-					t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-				}
-				if token.Column != expectedToken.Column {
-					t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-				}
+				assertTokensEqual(t, expectedToken, token, i)
 			}
 		})
 	}
@@ -654,9 +577,7 @@ func TestLexer_HasMoreTokens(t *testing.T) {
 			lexer := NewLexer(tt.input)
 			
 			// Should have tokens initially (at least EOF)
-			if !lexer.HasMoreTokens() {
-				t.Error("HasMoreTokens() should return true initially")
-			}
+			assert.True(t, lexer.HasMoreTokens(), "HasMoreTokens() should return true initially")
 			
 			// Consume all tokens
 			for {
@@ -667,20 +588,14 @@ func TestLexer_HasMoreTokens(t *testing.T) {
 			}
 			
 			// Should still have EOF token available
-			if !lexer.HasMoreTokens() {
-				t.Error("HasMoreTokens() should return true when EOF is available")
-			}
+			assert.True(t, lexer.HasMoreTokens(), "HasMoreTokens() should return true when EOF is available")
 			
 			// Get EOF token
 			token := lexer.NextToken()
-			if token.Type != EOF {
-				t.Errorf("Expected EOF token, got %v", token.Type)
-			}
+			assert.Equal(t, EOF, token.Type, "Expected EOF token")
 			
 			// After EOF, should still return true (EOF is always available)
-			if !lexer.HasMoreTokens() {
-				t.Error("HasMoreTokens() should return true even after EOF")
-			}
+			assert.True(t, lexer.HasMoreTokens(), "HasMoreTokens() should return true even after EOF")
 		})
 	}
 }
@@ -717,17 +632,6 @@ func TestLexer_ComplexProgram(t *testing.T) {
 	
 	for i, expectedToken := range expected {
 		token := lexer.NextToken()
-		if token.Type != expectedToken.Type {
-			t.Errorf("token[%d].Type = %v, want %v", i, token.Type, expectedToken.Type)
-		}
-		if token.Value != expectedToken.Value {
-			t.Errorf("token[%d].Value = %v, want %v", i, token.Value, expectedToken.Value)
-		}
-		if token.Line != expectedToken.Line {
-			t.Errorf("token[%d].Line = %v, want %v", i, token.Line, expectedToken.Line)
-		}
-		if token.Column != expectedToken.Column {
-			t.Errorf("token[%d].Column = %v, want %v", i, token.Column, expectedToken.Column)
-		}
+		assertTokensEqual(t, expectedToken, token, i)
 	}
 }
