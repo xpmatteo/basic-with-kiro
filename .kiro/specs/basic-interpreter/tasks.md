@@ -87,50 +87,50 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 2.2_
 
-- [ ] 5. Implement core statements using TDD
-- [ ] 5.1 Write assignment statement tests first
+- [x] 5. Implement core statements using TDD
+- [x] 5.1 Write assignment statement tests first
   - Write failing tests for AssignmentStatement struct and Execute method
   - Write tests for both numeric and string variable assignments
   - Write tests for assignment with complex expressions on right-hand side
   - Write tests for error cases: invalid variable names, type mismatches
   - _Requirements: 2.1, 2.3, TDD Requirements 2.1_
 
-- [ ] 5.2 Implement assignment statement to pass tests
+- [x] 5.2 Implement assignment statement to pass tests
   - Create AssignmentStatement struct with minimal Execute method
   - Add support for variable assignments as defined by tests
   - Implement error handling for invalid assignments
   - Verify all assignment statement tests pass
   - _Requirements: 2.1, 2.3, TDD Requirements 2.1_
 
-- [ ] 5.3 Write PRINT statement tests first
+- [x] 5.3 Write PRINT statement tests first
   - Write failing tests for PrintStatement struct with mocked output
   - Write tests for multiple expressions and different separators
   - Write tests for numeric and string formatting
   - Write tests for edge cases: empty print, special characters
   - _Requirements: 4.1, 4.3, TDD Requirements 4.1_
 
-- [ ] 5.4 Implement PRINT statement to pass tests
+- [x] 5.4 Implement PRINT statement to pass tests
   - Create PrintStatement struct with output formatting functionality
   - Implement expression evaluation and output generation as required by tests
   - Add proper separator handling and value formatting
   - Verify all PRINT statement tests pass
   - _Requirements: 4.1, 4.3, TDD Requirements 4.1_
 
-- [ ] 5.5 Write INPUT statement tests first
+- [x] 5.5 Write INPUT statement tests first
   - Write failing tests for InputStatement struct with mocked input
   - Write tests for input validation and type conversion
   - Write tests for prompt display and variable assignment
   - Write tests for error cases: invalid input, conversion failures
   - _Requirements: 4.2, 4.4, TDD Requirements 4.2_
 
-- [ ] 5.6 Implement INPUT statement to pass tests
+- [x] 5.6 Implement INPUT statement to pass tests
   - Create InputStatement struct with input reading functionality
   - Implement input validation and type conversion as defined by tests
   - Add proper error handling for invalid input scenarios
   - Verify all INPUT statement tests pass
   - _Requirements: 4.2, 4.4, TDD Requirements 4.2_
 
-- [ ] 5.7 Refactor core statements
+- [x] 5.7 Refactor core statements
   - Improve statement implementations while keeping all tests green
   - Extract common patterns and optimize code structure
   - Ensure clean separation between statement logic and I/O operations
