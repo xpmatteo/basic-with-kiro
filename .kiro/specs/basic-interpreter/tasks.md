@@ -65,22 +65,22 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 2.1, 2.3, 2.4_
 
-- [ ] 4. Implement basic expressions and arithmetic using TDD
-- [ ] 4.1 Write expression tests first
+- [x] 4. Implement basic expressions and arithmetic using TDD
+- [x] 4.1 Write expression tests first
   - Write failing tests for Expression interface and basic expression types
   - Write tests for binary operators (+, -, *, /, ^) with proper precedence
   - Write tests for variable reference expressions and literal expressions
   - Write tests for complex nested expressions and parentheses handling
   - _Requirements: 2.2, TDD Requirements 2.2_
 
-- [ ] 4.2 Implement minimal expression system to pass tests
+- [x] 4.2 Implement minimal expression system to pass tests
   - Create Expression interface and basic expression implementations
   - Implement arithmetic expression evaluation with correct operator precedence
   - Add variable reference and literal expression support
   - Verify all expression tests pass
   - _Requirements: 2.2, TDD Requirements 2.2_
 
-- [ ] 4.3 Refactor expression implementation
+- [x] 4.3 Refactor expression implementation
   - Improve expression evaluation code while keeping tests green
   - Extract common evaluation patterns and optimize precedence handling
   - Ensure clean separation between different expression types
