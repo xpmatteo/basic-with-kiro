@@ -72,3 +72,14 @@ func (env *Environment) getDefaultValue(normalizedName string) Value {
 func (env *Environment) Random() float64 {
 	return env.rng.Float64()
 }
+
+// SetRandomSeed sets the random number generator seed
+func (env *Environment) SetRandomSeed(seed int64) {
+	env.RandomSeed = seed
+	env.rng = rand.New(rand.NewSource(seed))
+}
+
+// GetRandomSeed returns the current random number generator seed
+func (env *Environment) GetRandomSeed() int64 {
+	return env.RandomSeed
+}

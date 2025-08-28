@@ -187,50 +187,50 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 7. Implement built-in functions using TDD
-- [ ] 7.1 Write function call system tests first
+- [x] 7. Implement built-in functions using TDD
+- [x] 7.1 Write function call system tests first
   - Write failing tests for FunctionCallExpression struct and BuiltinFunction interface
   - Write tests for function registry and built-in function lookup
   - Write tests for function call parsing and argument validation
   - Write tests for error cases: unknown functions, wrong argument counts
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, TDD Requirements 5.1_
 
-- [ ] 7.2 Implement function call system to pass tests
+- [x] 7.2 Implement function call system to pass tests
   - Create FunctionCallExpression struct and BuiltinFunction interface
   - Implement function registry for built-in function lookup
   - Add function call parsing and execution as defined by tests
   - Verify all function call system tests pass
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, TDD Requirements 5.1_
 
-- [ ] 7.3 Write mathematical function tests first
+- [x] 7.3 Write mathematical function tests first
   - Write failing tests for ABS, INT, and RND function implementations
   - Write tests for random number generator state management
   - Write tests for edge cases: negative numbers, zero, boundary values
   - Write tests for function argument validation and error handling
   - _Requirements: 5.1, 5.2, 5.3, TDD Requirements 5.1_
 
-- [ ] 7.4 Implement mathematical functions to pass tests
+- [x] 7.4 Implement mathematical functions to pass tests
   - Create ABS, INT, and RND function implementations
   - Add random number generator state management in Environment
   - Implement argument validation and error handling as required by tests
   - Verify all mathematical function tests pass
   - _Requirements: 5.1, 5.2, 5.3, TDD Requirements 5.1_
 
-- [ ] 7.5 Write string function tests first
+- [x] 7.5 Write string function tests first
   - Write failing tests for LEN, MID$, STR$, and VAL function implementations
   - Write tests for string manipulation and conversion logic
   - Write tests for edge cases: empty strings, invalid indices, conversion errors
   - Write tests for function argument validation and type checking
   - _Requirements: 5.4, 5.5, TDD Requirements 5.2_
 
-- [ ] 7.6 Implement string functions to pass tests
+- [x] 7.6 Implement string functions to pass tests
   - Create LEN, MID$, STR$, and VAL function implementations
   - Add string manipulation and conversion logic as defined by tests
   - Implement proper error handling for invalid operations
   - Verify all string function tests pass
   - _Requirements: 5.4, 5.5, TDD Requirements 5.2_
 
-- [ ] 7.7 Refactor built-in functions
+- [x] 7.7 Refactor built-in functions
   - Improve function implementations while keeping all tests green
   - Extract common patterns and optimize function dispatch
   - Ensure clean separation between function logic and argument handling

@@ -105,6 +105,19 @@ type ParenthesesExpression struct {
 	Expression Expression
 }
 
+// BuiltinFunction interface represents a built-in function that can be called
+type BuiltinFunction interface {
+	Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error)
+	Name() string
+	ArgCount() int
+}
+
+// FunctionCallExpression represents a function call in an expression
+type FunctionCallExpression struct {
+	Name string
+	Args []Expression
+}
+
 // Evaluate evaluates the wrapped expression
 // Parentheses don't change the evaluation logic, only precedence during parsing
 func (p *ParenthesesExpression) Evaluate(env *runtime.Environment) (runtime.Value, error) {
@@ -112,6 +125,39 @@ func (p *ParenthesesExpression) Evaluate(env *runtime.Environment) (runtime.Valu
 	if err != nil {
 		return runtime.Value{}, fmt.Errorf("error evaluating parenthesized expression: %w", err)
 	}
+	return result, nil
+}
+
+// Evaluate evaluates a function call by looking up the function and calling it with evaluated arguments
+func (f *FunctionCallExpression) Evaluate(env *runtime.Environment) (runtime.Value, error) {
+	// Look up the built-in function
+	builtinFunc := GetBuiltinFunction(f.Name)
+	if builtinFunc == nil {
+		return runtime.Value{}, fmt.Errorf("unknown function: %s", f.Name)
+	}
+
+	// Validate argument count
+	if len(f.Args) != builtinFunc.ArgCount() {
+		return runtime.Value{}, fmt.Errorf("function %s expects %d argument(s), got %d", 
+			f.Name, builtinFunc.ArgCount(), len(f.Args))
+	}
+
+	// Evaluate all arguments
+	args := make([]runtime.Value, len(f.Args))
+	for i, argExpr := range f.Args {
+		value, err := argExpr.Evaluate(env)
+		if err != nil {
+			return runtime.Value{}, fmt.Errorf("error evaluating argument %d for function %s: %w", i, f.Name, err)
+		}
+		args[i] = value
+	}
+
+	// Call the function
+	result, err := builtinFunc.Call(args, env)
+	if err != nil {
+		return runtime.Value{}, fmt.Errorf("error calling function %s: %w", f.Name, err)
+	}
+
 	return result, nil
 }
 
@@ -139,6 +185,14 @@ func NewBinaryExpression(left Expression, operator string, right Expression) *Bi
 // NewParenthesesExpression creates a new parentheses expression wrapping the given expression
 func NewParenthesesExpression(expr Expression) *ParenthesesExpression {
 	return &ParenthesesExpression{Expression: expr}
+}
+
+// NewFunctionCallExpression creates a new function call expression with the given name and arguments
+func NewFunctionCallExpression(name string, args []Expression) *FunctionCallExpression {
+	return &FunctionCallExpression{
+		Name: name,
+		Args: args,
+	}
 }
 
 // IsValidOperator checks if the given operator is supported
@@ -706,4 +760,274 @@ func (g *GotoStatement) Execute(env *runtime.Environment) error {
 	// Set the program counter to the target line number
 	SetProgramCounter(env, g.LineNumber)
 	return nil
+}
+
+// Function registry for built-in functions
+var builtinFunctions map[string]BuiltinFunction
+
+// init initializes the built-in function registry
+func init() {
+	builtinFunctions = make(map[string]BuiltinFunction)
+	
+	// Register mathematical functions
+	registerFunction(&AbsFunction{})
+	registerFunction(&IntFunction{})
+	registerFunction(&RndFunction{})
+	
+	// Register string functions
+	registerFunction(&LenFunction{})
+	registerFunction(&MidFunction{})
+	registerFunction(&StrFunction{})
+	registerFunction(&ValFunction{})
+}
+
+// registerFunction registers a built-in function in the registry
+func registerFunction(fn BuiltinFunction) {
+	builtinFunctions[fn.Name()] = fn
+}
+
+// GetRegisteredFunctionNames returns a list of all registered function names
+func GetRegisteredFunctionNames() []string {
+	names := make([]string, 0, len(builtinFunctions))
+	for name := range builtinFunctions {
+		names = append(names, name)
+	}
+	return names
+}
+
+// IsFunctionRegistered checks if a function is registered
+func IsFunctionRegistered(name string) bool {
+	normalizedName := strings.ToUpper(name)
+	_, exists := builtinFunctions[normalizedName]
+	return exists
+}
+
+// GetBuiltinFunction retrieves a built-in function by name (case-insensitive)
+func GetBuiltinFunction(name string) BuiltinFunction {
+	normalizedName := strings.ToUpper(name)
+	return builtinFunctions[normalizedName]
+}
+
+// Helper functions for common validation patterns
+
+// validateArgumentCount validates that the correct number of arguments is provided
+func validateArgumentCount(functionName string, expected int, actual int) error {
+	if actual != expected {
+		if expected == 0 {
+			return fmt.Errorf("%s function expected 0 arguments, got %d", functionName, actual)
+		} else if expected == 1 {
+			return fmt.Errorf("%s function expected 1 argument, got %d", functionName, actual)
+		} else {
+			return fmt.Errorf("%s function expected %d arguments, got %d", functionName, expected, actual)
+		}
+	}
+	return nil
+}
+
+// validateNumericArgument validates that an argument is numeric
+func validateNumericArgument(functionName string, argIndex int, arg runtime.Value) error {
+	if arg.Type != runtime.NumericValue {
+		if argIndex == 0 {
+			return fmt.Errorf("%s function argument must be numeric", functionName)
+		}
+		return fmt.Errorf("%s function %s argument must be numeric", functionName, getOrdinal(argIndex+1))
+	}
+	return nil
+}
+
+// validateStringArgument validates that an argument is a string
+func validateStringArgument(functionName string, argIndex int, arg runtime.Value) error {
+	if arg.Type != runtime.StringValue {
+		if argIndex == 0 {
+			// Special case for functions with multiple arguments - be more specific
+			if functionName == "MID$" || functionName == "VAL" {
+				return fmt.Errorf("%s function %s argument must be string", functionName, getOrdinal(argIndex+1))
+			}
+			return fmt.Errorf("%s function argument must be string", functionName)
+		}
+		return fmt.Errorf("%s function %s argument must be string", functionName, getOrdinal(argIndex+1))
+	}
+	return nil
+}
+
+// getOrdinal returns the ordinal form of a number (1st, 2nd, 3rd, etc.)
+func getOrdinal(n int) string {
+	switch n {
+	case 1:
+		return "first"
+	case 2:
+		return "second"
+	case 3:
+		return "third"
+	default:
+		return fmt.Sprintf("%dth", n)
+	}
+}
+
+// Built-in function implementations
+
+// Mathematical Functions
+
+// AbsFunction implements the ABS function (absolute value)
+type AbsFunction struct{}
+
+func (f *AbsFunction) Name() string { return "ABS" }
+func (f *AbsFunction) ArgCount() int { return 1 }
+
+func (f *AbsFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("ABS", 1, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateNumericArgument("ABS", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	result := args[0].NumValue
+	if result < 0 {
+		result = -result
+	}
+	
+	return runtime.NewNumericValue(result), nil
+}
+
+// IntFunction implements the INT function (integer part)
+type IntFunction struct{}
+
+func (f *IntFunction) Name() string { return "INT" }
+func (f *IntFunction) ArgCount() int { return 1 }
+
+func (f *IntFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("INT", 1, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateNumericArgument("INT", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	result := float64(int(args[0].NumValue))
+	return runtime.NewNumericValue(result), nil
+}
+
+// RndFunction implements the RND function (random number 0-1)
+type RndFunction struct{}
+
+func (f *RndFunction) Name() string { return "RND" }
+func (f *RndFunction) ArgCount() int { return 0 }
+
+func (f *RndFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("RND", 0, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	// Use the environment's random number generator
+	result := env.Random()
+	return runtime.NewNumericValue(result), nil
+}
+
+// String Functions
+
+// LenFunction implements the LEN function (string length)
+type LenFunction struct{}
+
+func (f *LenFunction) Name() string { return "LEN" }
+func (f *LenFunction) ArgCount() int { return 1 }
+
+func (f *LenFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("LEN", 1, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateStringArgument("LEN", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	result := float64(len(args[0].StrValue))
+	return runtime.NewNumericValue(result), nil
+}
+
+// MidFunction implements the MID$ function (substring extraction)
+type MidFunction struct{}
+
+func (f *MidFunction) Name() string { return "MID$" }
+func (f *MidFunction) ArgCount() int { return 3 }
+
+func (f *MidFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("MID$", 3, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateStringArgument("MID$", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	if err := validateNumericArgument("MID$", 1, args[1]); err != nil {
+		return runtime.Value{}, err
+	}
+	if err := validateNumericArgument("MID$", 2, args[2]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	return f.extractSubstring(args[0].StrValue, args[1].NumValue, args[2].NumValue), nil
+}
+
+// extractSubstring extracts a substring using BASIC's 1-based indexing
+func (f *MidFunction) extractSubstring(str string, start, length float64) runtime.Value {
+	startIdx := int(start) - 1 // BASIC uses 1-based indexing
+	lengthVal := int(length)
+	
+	// Handle invalid start index or negative length
+	if startIdx < 0 || startIdx >= len(str) || lengthVal <= 0 {
+		return runtime.NewStringValue("")
+	}
+	
+	endIdx := startIdx + lengthVal
+	if endIdx > len(str) {
+		endIdx = len(str)
+	}
+	
+	result := str[startIdx:endIdx]
+	return runtime.NewStringValue(result)
+}
+
+// StrFunction implements the STR$ function (number to string conversion)
+type StrFunction struct{}
+
+func (f *StrFunction) Name() string { return "STR$" }
+func (f *StrFunction) ArgCount() int { return 1 }
+
+func (f *StrFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("STR$", 1, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateNumericArgument("STR$", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	result := args[0].ToString()
+	return runtime.NewStringValue(result), nil
+}
+
+// ValFunction implements the VAL function (string to number conversion)
+type ValFunction struct{}
+
+func (f *ValFunction) Name() string { return "VAL" }
+func (f *ValFunction) ArgCount() int { return 1 }
+
+func (f *ValFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
+	if err := validateArgumentCount("VAL", 1, len(args)); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	if err := validateStringArgument("VAL", 0, args[0]); err != nil {
+		return runtime.Value{}, err
+	}
+	
+	numValue, err := args[0].ToNumber()
+	if err != nil {
+		return runtime.Value{}, fmt.Errorf("VAL function cannot convert '%s' to number: %w", args[0].StrValue, err)
+	}
+	
+	return runtime.NewNumericValue(numValue), nil
 }
