@@ -122,7 +122,7 @@ func (v Value) Compare(other Value) int {
 	return compareString(vStr, otherStr)
 }
 
-// compareFloat64 is a helper function to compare two float64 values
+// compareFloat64 compares two float64 values
 func compareFloat64(a, b float64) int {
 	if a < b {
 		return -1
@@ -132,7 +132,7 @@ func compareFloat64(a, b float64) int {
 	return 0
 }
 
-// compareString is a helper function to compare two strings
+// compareString compares two string values
 func compareString(a, b string) int {
 	if a < b {
 		return -1

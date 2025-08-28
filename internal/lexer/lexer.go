@@ -150,7 +150,7 @@ type BasicLexer struct {
 	ch            byte   // current char under examination
 	line          int    // current line number (1-based)
 	column        int    // current column number (1-based)
-	atStartOfLine bool   // true if we're at the start of a line (for line number detection)
+	isAtLineStart bool   // true if we're at the start of a line (for line number detection)
 }
 
 // NewLexer creates a new lexer instance
@@ -159,7 +159,7 @@ func NewLexer(input string) Lexer {
 		input:         input,
 		line:          1,
 		column:        0,
-		atStartOfLine: true,
+		isAtLineStart: true,
 	}
 	l.readChar()
 	return l
@@ -178,7 +178,7 @@ func (l *BasicLexer) readChar() {
 	if l.ch == '\n' {
 		l.line++
 		l.column = 0
-		l.atStartOfLine = true
+		l.isAtLineStart = true
 	} else {
 		l.column++
 	}
@@ -283,18 +283,22 @@ func lookupIdent(ident string) TokenType {
 	return IDENTIFIER
 }
 
+// makeToken creates a token with the given type and value
+func (l *BasicLexer) makeToken(tokenType TokenType, value string, line, column int) Token {
+	l.isAtLineStart = false
+	return Token{Type: tokenType, Value: value, Line: line, Column: column}
+}
+
 // makeSingleCharToken creates a token for a single character
 func (l *BasicLexer) makeSingleCharToken(tokenType TokenType, line, column int) Token {
-	l.atStartOfLine = false
-	return Token{Type: tokenType, Value: string(l.ch), Line: line, Column: column}
+	return l.makeToken(tokenType, string(l.ch), line, column)
 }
 
 // makeTwoCharToken creates a token for a two-character operator
 func (l *BasicLexer) makeTwoCharToken(tokenType TokenType, line, column int) Token {
 	ch := l.ch
 	l.readChar()
-	l.atStartOfLine = false
-	return Token{Type: tokenType, Value: string(ch) + string(l.ch), Line: line, Column: column}
+	return l.makeToken(tokenType, string(ch)+string(l.ch), line, column)
 }
 
 // NextToken scans the input and returns the next token
@@ -354,7 +358,7 @@ func (l *BasicLexer) NextToken() Token {
 			return l.readNumberToken(startLine, startColumn)
 		} else {
 			tok = Token{Type: ILLEGAL, Value: string(l.ch), Line: startLine, Column: startColumn}
-			l.atStartOfLine = false
+			l.isAtLineStart = false
 		}
 	}
 	
@@ -365,7 +369,7 @@ func (l *BasicLexer) NextToken() Token {
 // readStringToken handles string literal tokenization
 func (l *BasicLexer) readStringToken(line, column int) Token {
 	value, ok := l.readString()
-	l.atStartOfLine = false
+	l.isAtLineStart = false
 	if !ok {
 		return Token{Type: ILLEGAL, Value: value, Line: line, Column: column}
 	}
@@ -376,7 +380,7 @@ func (l *BasicLexer) readStringToken(line, column int) Token {
 func (l *BasicLexer) readIdentifierToken(line, column int) Token {
 	value := l.readIdentifier()
 	tokenType := lookupIdent(value)
-	l.atStartOfLine = false
+	l.isAtLineStart = false
 	return Token{Type: tokenType, Value: value, Line: line, Column: column}
 }
 
@@ -384,19 +388,19 @@ func (l *BasicLexer) readIdentifierToken(line, column int) Token {
 func (l *BasicLexer) readNumberToken(line, column int) Token {
 	value := l.readNumber()
 	var tokenType TokenType
-	if l.atStartOfLine && l.isFollowedByKeyword() {
+	if l.isAtLineStart && l.isFollowedByKeyword() {
 		tokenType = LINENUMBER
 	} else {
 		tokenType = NUMBER
 	}
-	l.atStartOfLine = false
+	l.isAtLineStart = false
 	return Token{Type: tokenType, Value: value, Line: line, Column: column}
 }
 
 // handleNewline processes newline characters
 func (l *BasicLexer) handleNewline() Token {
 	l.readChar()
-	l.atStartOfLine = true
+	l.isAtLineStart = true
 	return l.NextToken()
 }
 
@@ -404,7 +408,7 @@ func (l *BasicLexer) handleNewline() Token {
 func (l *BasicLexer) isLineNumber(value string) bool {
 	// A number is a line number if it appears at the start of a line
 	// We need to track if we've seen any non-whitespace on this line
-	return l.atStartOfLine
+	return l.isAtLineStart
 }
 
 // isFollowedByKeyword checks if the current position is followed by whitespace and then a keyword

@@ -810,59 +810,57 @@ func GetBuiltinFunction(name string) BuiltinFunction {
 
 // Helper functions for common validation patterns
 
-// validateArgumentCount validates that the correct number of arguments is provided
-func validateArgumentCount(functionName string, expected int, actual int) error {
+// FunctionValidator provides validation utilities for built-in functions
+type FunctionValidator struct {
+	functionName string
+}
+
+// NewFunctionValidator creates a new validator for the given function
+func NewFunctionValidator(functionName string) *FunctionValidator {
+	return &FunctionValidator{functionName: functionName}
+}
+
+// ValidateArgumentCount validates that the correct number of arguments is provided
+func (v *FunctionValidator) ValidateArgumentCount(expected, actual int) error {
 	if actual != expected {
-		if expected == 0 {
-			return fmt.Errorf("%s function expected 0 arguments, got %d", functionName, actual)
-		} else if expected == 1 {
-			return fmt.Errorf("%s function expected 1 argument, got %d", functionName, actual)
-		} else {
-			return fmt.Errorf("%s function expected %d arguments, got %d", functionName, expected, actual)
+		argumentWord := "arguments"
+		if expected == 1 {
+			argumentWord = "argument"
 		}
+		return fmt.Errorf("%s function expected %d %s, got %d", v.functionName, expected, argumentWord, actual)
 	}
 	return nil
 }
 
-// validateNumericArgument validates that an argument is numeric
-func validateNumericArgument(functionName string, argIndex int, arg runtime.Value) error {
+// ValidateNumericArgument validates that an argument is numeric
+func (v *FunctionValidator) ValidateNumericArgument(argIndex int, arg runtime.Value) error {
 	if arg.Type != runtime.NumericValue {
-		if argIndex == 0 {
-			return fmt.Errorf("%s function argument must be numeric", functionName)
-		}
-		return fmt.Errorf("%s function %s argument must be numeric", functionName, getOrdinal(argIndex+1))
+		return fmt.Errorf("%s function %s argument must be numeric", v.functionName, v.getOrdinalDescription(argIndex))
 	}
 	return nil
 }
 
-// validateStringArgument validates that an argument is a string
-func validateStringArgument(functionName string, argIndex int, arg runtime.Value) error {
+// ValidateStringArgument validates that an argument is a string
+func (v *FunctionValidator) ValidateStringArgument(argIndex int, arg runtime.Value) error {
 	if arg.Type != runtime.StringValue {
-		if argIndex == 0 {
-			// Special case for functions with multiple arguments - be more specific
-			if functionName == "MID$" || functionName == "VAL" {
-				return fmt.Errorf("%s function %s argument must be string", functionName, getOrdinal(argIndex+1))
-			}
-			return fmt.Errorf("%s function argument must be string", functionName)
-		}
-		return fmt.Errorf("%s function %s argument must be string", functionName, getOrdinal(argIndex+1))
+		return fmt.Errorf("%s function %s argument must be string", v.functionName, v.getOrdinalDescription(argIndex))
 	}
 	return nil
 }
 
-// getOrdinal returns the ordinal form of a number (1st, 2nd, 3rd, etc.)
-func getOrdinal(n int) string {
-	switch n {
-	case 1:
+// getOrdinalDescription returns a description for the argument position
+func (v *FunctionValidator) getOrdinalDescription(argIndex int) string {
+	if argIndex == 0 {
 		return "first"
-	case 2:
+	} else if argIndex == 1 {
 		return "second"
-	case 3:
+	} else if argIndex == 2 {
 		return "third"
-	default:
-		return fmt.Sprintf("%dth", n)
 	}
+	return fmt.Sprintf("%dth", argIndex+1)
 }
+
+
 
 // Built-in function implementations
 
@@ -875,11 +873,13 @@ func (f *AbsFunction) Name() string { return "ABS" }
 func (f *AbsFunction) ArgCount() int { return 1 }
 
 func (f *AbsFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("ABS", 1, len(args)); err != nil {
+	validator := NewFunctionValidator("ABS")
+	
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateNumericArgument("ABS", 0, args[0]); err != nil {
+	if err := validator.ValidateNumericArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -898,11 +898,13 @@ func (f *IntFunction) Name() string { return "INT" }
 func (f *IntFunction) ArgCount() int { return 1 }
 
 func (f *IntFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("INT", 1, len(args)); err != nil {
+	validator := NewFunctionValidator("INT")
+	
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateNumericArgument("INT", 0, args[0]); err != nil {
+	if err := validator.ValidateNumericArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -917,7 +919,9 @@ func (f *RndFunction) Name() string { return "RND" }
 func (f *RndFunction) ArgCount() int { return 0 }
 
 func (f *RndFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("RND", 0, len(args)); err != nil {
+	validator := NewFunctionValidator("RND")
+	
+	if err := validator.ValidateArgumentCount(0, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -935,11 +939,13 @@ func (f *LenFunction) Name() string { return "LEN" }
 func (f *LenFunction) ArgCount() int { return 1 }
 
 func (f *LenFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("LEN", 1, len(args)); err != nil {
+	validator := NewFunctionValidator("LEN")
+	
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateStringArgument("LEN", 0, args[0]); err != nil {
+	if err := validator.ValidateStringArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -954,17 +960,19 @@ func (f *MidFunction) Name() string { return "MID$" }
 func (f *MidFunction) ArgCount() int { return 3 }
 
 func (f *MidFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("MID$", 3, len(args)); err != nil {
+	validator := NewFunctionValidator("MID$")
+	
+	if err := validator.ValidateArgumentCount(3, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateStringArgument("MID$", 0, args[0]); err != nil {
+	if err := validator.ValidateStringArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
-	if err := validateNumericArgument("MID$", 1, args[1]); err != nil {
+	if err := validator.ValidateNumericArgument(1, args[1]); err != nil {
 		return runtime.Value{}, err
 	}
-	if err := validateNumericArgument("MID$", 2, args[2]); err != nil {
+	if err := validator.ValidateNumericArgument(2, args[2]); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -997,11 +1005,13 @@ func (f *StrFunction) Name() string { return "STR$" }
 func (f *StrFunction) ArgCount() int { return 1 }
 
 func (f *StrFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("STR$", 1, len(args)); err != nil {
+	validator := NewFunctionValidator("STR$")
+	
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateNumericArgument("STR$", 0, args[0]); err != nil {
+	if err := validator.ValidateNumericArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
 	
@@ -1016,11 +1026,13 @@ func (f *ValFunction) Name() string { return "VAL" }
 func (f *ValFunction) ArgCount() int { return 1 }
 
 func (f *ValFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
-	if err := validateArgumentCount("VAL", 1, len(args)); err != nil {
+	validator := NewFunctionValidator("VAL")
+	
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	if err := validateStringArgument("VAL", 0, args[0]); err != nil {
+	if err := validator.ValidateStringArgument(0, args[0]); err != nil {
 		return runtime.Value{}, err
 	}
 	
