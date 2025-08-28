@@ -237,50 +237,50 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 8. Implement parser using TDD
-- [ ] 8.1 Write statement parser tests first
+- [x] 8. Implement parser using TDD
+- [x] 8.1 Write statement parser tests first
   - Write failing tests for Parser struct with ParseStatement method
   - Write tests for parsing each statement type (PRINT, INPUT, GOTO, IF, FOR, NEXT, assignment)
   - Write tests for line number handling and statement recognition
   - Write tests for error cases: invalid syntax, malformed statements
   - _Requirements: 1.1, 1.3, 6.2, TDD Requirements 1.2_
 
-- [ ] 8.2 Implement statement parser to pass tests
+- [x] 8.2 Implement statement parser to pass tests
   - Create Parser struct with ParseStatement method for each statement type
   - Implement line number handling and statement recognition as defined by tests
   - Add proper error reporting for syntax errors
   - Verify all statement parser tests pass
   - _Requirements: 1.1, 1.3, 6.2, TDD Requirements 1.2_
 
-- [ ] 8.3 Write expression parser tests first
+- [x] 8.3 Write expression parser tests first
   - Write failing tests for ParseExpression method with operator precedence
   - Write tests for parentheses handling and function calls in expressions
   - Write tests for complex nested expressions and edge cases
   - Write tests for error cases: unbalanced parentheses, invalid operators
   - _Requirements: 2.2, 5.1, 5.2, 5.3, 5.4, 5.5, TDD Requirements 2.2_
 
-- [ ] 8.4 Implement expression parser to pass tests
+- [x] 8.4 Implement expression parser to pass tests
   - Create ParseExpression method with operator precedence handling
   - Add support for parentheses and function calls as defined by tests
   - Implement proper error handling for expression parsing errors
   - Verify all expression parser tests pass
   - _Requirements: 2.2, 5.1, 5.2, 5.3, 5.4, 5.5, TDD Requirements 2.2_
 
-- [ ] 8.5 Write program parser tests first
+- [x] 8.5 Write program parser tests first
   - Write failing tests for ParseProgram method building complete Program struct
   - Write tests for line number ordering and duplicate line detection
   - Write tests for complete program parsing with multiple statements
   - Write tests for error cases: duplicate lines, invalid program structure
   - _Requirements: 1.1, 1.2, TDD Requirements 1.2_
 
-- [ ] 8.6 Implement program parser to pass tests
+- [x] 8.6 Implement program parser to pass tests
   - Create ParseProgram method that builds complete Program struct
   - Implement line number ordering and duplicate line detection as required by tests
   - Add comprehensive error handling for program-level parsing errors
   - Verify all program parser tests pass
   - _Requirements: 1.1, 1.2, TDD Requirements 1.2_
 
-- [ ] 8.7 Refactor parser implementation
+- [x] 8.7 Refactor parser implementation
   - Improve parser code structure while keeping all tests green
   - Extract common parsing patterns and optimize error recovery
   - Ensure clean separation between different parsing responsibilities
