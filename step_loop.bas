@@ -1,0 +1,3 @@
+10 FOR I = 2 TO 10 STEP 2
+20 PRINT "Even:", I
+30 NEXT I

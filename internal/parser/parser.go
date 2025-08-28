@@ -17,9 +17,10 @@ type Parser interface {
 
 // BasicParser implements the Parser interface
 type BasicParser struct {
-	lexer     lexer.Lexer
-	curToken  lexer.Token
-	peekToken lexer.Token
+	lexer           lexer.Lexer
+	curToken        lexer.Token
+	peekToken       lexer.Token
+	currentLineNumber int
 }
 
 // NewParser creates a new parser instance
@@ -70,6 +71,9 @@ func (p *BasicParser) ParseProgram() (*ast.Program, error) {
 		if _, exists := program.Lines[lineNumber]; exists {
 			return nil, fmt.Errorf("duplicate line number: %d", lineNumber)
 		}
+		
+		// Set current line number for statement parsing
+		p.currentLineNumber = lineNumber
 		
 		// Parse the statement for this line
 		stmt, err := p.ParseStatement()
@@ -423,7 +427,7 @@ func (p *BasicParser) parseForStatement() (ast.Statement, error) {
 		}
 	}
 	
-	return ast.NewForStatement(variable, startExpr, endExpr, stepExpr, 0), nil
+	return ast.NewForStatement(variable, startExpr, endExpr, stepExpr, p.currentLineNumber), nil
 }
 
 // parseNextStatement parses a NEXT statement

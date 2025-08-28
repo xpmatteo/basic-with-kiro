@@ -1,0 +1,6 @@
+10 FOR I = 1 TO 3
+20 FOR J = 1 TO 2
+30 PRINT "I=", I, "J=", J
+40 NEXT J
+50 NEXT I
+60 PRINT "Done!"
