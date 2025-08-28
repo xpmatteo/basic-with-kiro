@@ -1,0 +1,4 @@
+10 X = 10
+20 PRINT X
+RUN
+EXIT

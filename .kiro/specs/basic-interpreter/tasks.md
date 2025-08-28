@@ -323,50 +323,50 @@
   - Verify all tests still pass after refactoring
   - _Requirements: 1.2, 6.1, 6.2, 6.3, 6.4_
 
-- [ ] 10. Implement command-line interface using TDD
-- [ ] 10.1 Write CLI argument parsing tests first
+- [-] 10. Implement command-line interface using TDD
+- [x] 10.1 Write CLI argument parsing tests first
   - Write failing tests for CLI struct with flag parsing for debug mode and help
   - Write tests for file argument handling and validation
   - Write tests for error cases: invalid flags, missing files, conflicting options
   - Write tests for help message formatting and version information
   - _Requirements: 7.1, 7.4, TDD Requirements 7.1_
 
-- [ ] 10.2 Implement CLI argument parsing to pass tests
+- [x] 10.2 Implement CLI argument parsing to pass tests
   - Create CLI struct with flag parsing functionality
   - Implement file argument handling and validation as defined by tests
   - Add proper error handling and help message generation
   - Verify all CLI argument parsing tests pass
   - _Requirements: 7.1, 7.4, TDD Requirements 7.1_
 
-- [ ] 10.3 Write interactive mode tests first
+- [x] 10.3 Write interactive mode tests first
   - Write failing tests for interactive REPL with mocked I/O
   - Write tests for line-by-line BASIC input processing
   - Write tests for command history and program state maintenance
   - Write tests for error handling in interactive mode
   - _Requirements: 7.2, 7.3, TDD Requirements 7.2_
 
-- [ ] 10.4 Implement interactive mode to pass tests
+- [x] 10.4 Implement interactive mode to pass tests
   - Create interactive REPL that accepts line-by-line BASIC input
   - Implement command processing and program state maintenance as defined by tests
   - Add basic line editing and history functionality
   - Verify all interactive mode tests pass
   - _Requirements: 7.2, 7.3, TDD Requirements 7.2_
 
-- [ ] 10.5 Write file execution mode tests first
+- [x] 10.5 Write file execution mode tests first
   - Write failing tests for file loading and complete program execution
   - Write tests for file I/O error handling and validation
   - Write tests with sample BASIC program files and expected outputs
   - Write tests for integration between file loading and interpreter execution
   - _Requirements: 7.1, 1.1, TDD Requirements 7.3_
 
-- [ ] 10.6 Implement file execution mode to pass tests
+- [x] 10.6 Implement file execution mode to pass tests
   - Create file loading and complete program execution functionality
   - Implement proper error handling for file I/O operations as defined by tests
   - Add integration between file loading and interpreter execution
   - Verify all file execution mode tests pass
   - _Requirements: 7.1, 1.1, TDD Requirements 7.3_
 
-- [ ] 10.7 Refactor command-line interface
+- [x] 10.7 Refactor command-line interface
   - Improve CLI code structure while keeping all tests green
   - Extract common patterns and optimize user experience
   - Ensure clean separation between CLI logic and interpreter functionality
