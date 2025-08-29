@@ -251,6 +251,10 @@ func (p *BasicParser) ParseStatement() (ast.Statement, error) {
 		return p.parseForStatement()
 	case lexer.NEXT:
 		return p.parseNextStatement()
+	case lexer.END:
+		return p.parseEndStatement()
+	case lexer.REM:
+		return p.parseRemStatement()
 	case lexer.IDENTIFIER:
 		return p.parseAssignmentStatement()
 	case lexer.NUMBER:
@@ -447,6 +451,35 @@ func (p *BasicParser) parseNextStatement() (ast.Statement, error) {
 	}
 	
 	return ast.NewNextStatement(variable), nil
+}
+
+// parseEndStatement parses an END statement
+func (p *BasicParser) parseEndStatement() (ast.Statement, error) {
+	if p.curToken.Type != lexer.END {
+		return nil, fmt.Errorf("expected END")
+	}
+	
+	p.nextToken() // consume END
+	
+	return ast.NewEndStatement(), nil
+}
+
+// parseRemStatement parses a REM (comment) statement
+func (p *BasicParser) parseRemStatement() (ast.Statement, error) {
+	if p.curToken.Type != lexer.REM {
+		return nil, fmt.Errorf("expected REM")
+	}
+	
+	p.nextToken() // consume REM
+	
+	// Consume the rest of the line as comment text
+	var comment string
+	for !p.isEndOfStatement() {
+		comment += p.curToken.Value + " "
+		p.nextToken()
+	}
+	
+	return ast.NewRemStatement(comment), nil
 }
 
 // parseAssignmentStatement parses an assignment statement

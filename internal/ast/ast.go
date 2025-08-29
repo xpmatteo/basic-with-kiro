@@ -415,6 +415,39 @@ func NewGotoStatement(lineNumber int, program *Program) *GotoStatement {
 	}
 }
 
+// EndStatement represents an END statement that terminates program execution
+type EndStatement struct {
+}
+
+// Execute terminates the program execution
+func (e *EndStatement) Execute(env *runtime.Environment) error {
+	// END statement simply returns nil to indicate normal termination
+	return nil
+}
+
+// NewEndStatement creates a new END statement
+func NewEndStatement() *EndStatement {
+	return &EndStatement{}
+}
+
+// RemStatement represents a REM (comment) statement
+type RemStatement struct {
+	Comment string
+}
+
+// Execute does nothing for comment statements
+func (r *RemStatement) Execute(env *runtime.Environment) error {
+	// Comments do nothing during execution
+	return nil
+}
+
+// NewRemStatement creates a new REM statement
+func NewRemStatement(comment string) *RemStatement {
+	return &RemStatement{
+		Comment: comment,
+	}
+}
+
 // ComparisonExpression represents a comparison between two expressions
 type ComparisonExpression struct {
 	Left     Expression

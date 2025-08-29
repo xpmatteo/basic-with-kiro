@@ -27,6 +27,7 @@ const (
 	NEXT
 	STEP
 	END
+	REM
 
 	// Operators
 	ASSIGN  // =
@@ -97,6 +98,8 @@ func (t TokenType) String() string {
 		return "STEP"
 	case END:
 		return "END"
+	case REM:
+		return "REM"
 	case ASSIGN:
 		return "ASSIGN"
 	case PLUS:
@@ -271,6 +274,7 @@ var keywords = map[string]TokenType{
 	"NEXT":  NEXT,
 	"STEP":  STEP,
 	"END":   END,
+	"REM":   REM,
 }
 
 // lookupIdent checks if identifier is a keyword (case-insensitive)
