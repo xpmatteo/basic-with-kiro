@@ -28,6 +28,15 @@ func (fe *FileExecutor) ExecuteProgram(program map[int]string, debugMode bool) e
 	// Convert the string-based program to source code
 	sourceCode := fe.programToSourceCode(program)
 	
+	if debugMode {
+		fe.output.WriteLine("Debug: Generated source code:")
+		lines := strings.Split(sourceCode, "\n")
+		for i, line := range lines {
+			fe.output.WriteLine(fmt.Sprintf("  %d: %s", i+1, line))
+		}
+		fe.output.WriteLine("")
+	}
+	
 	// Create lexer and parser
 	lex := lexer.NewLexer(sourceCode)
 	p := parser.NewParser(lex)
@@ -35,7 +44,8 @@ func (fe *FileExecutor) ExecuteProgram(program map[int]string, debugMode bool) e
 	// Parse the program
 	astProgram, err := p.ParseProgram()
 	if err != nil {
-		return fmt.Errorf("parse error: %w", err)
+		return fmt.Errorf("parse error in generated source code:\n%s\nError: %w", 
+			fe.addLineNumbers(sourceCode), err)
 	}
 	
 	// Set output writer for all PRINT statements
@@ -43,6 +53,9 @@ func (fe *FileExecutor) ExecuteProgram(program map[int]string, debugMode bool) e
 	
 	// Set input/output writers for all INPUT statements
 	fe.setInputOutputWriters(astProgram)
+	
+	// Set program references for all GOTO statements
+	fe.setProgramReferences(astProgram)
 	
 	// Create runtime environment
 	env := runtime.NewEnvironment()
@@ -277,5 +290,36 @@ func (fe *FileExecutor) setInputOutputWriterForStatement(statement ast.Statement
 			fe.setInputOutputWriterForStatement(stmt.ThenStatement)
 		}
 	// Add other statement types that might contain INPUT statements as needed
+	}
+}
+
+// addLineNumbers adds line numbers to source code for debugging
+func (fe *FileExecutor) addLineNumbers(sourceCode string) string {
+	lines := strings.Split(sourceCode, "\n")
+	var numbered []string
+	for i, line := range lines {
+		numbered = append(numbered, fmt.Sprintf("%3d: %s", i+1, line))
+	}
+	return strings.Join(numbered, "\n")
+}
+
+// setProgramReferences sets the program reference for all GOTO statements
+func (fe *FileExecutor) setProgramReferences(program *ast.Program) {
+	for _, statement := range program.Lines {
+		fe.setProgramReferenceForStatement(statement, program)
+	}
+}
+
+// setProgramReferenceForStatement recursively sets program references for GOTO statements
+func (fe *FileExecutor) setProgramReferenceForStatement(statement ast.Statement, program *ast.Program) {
+	switch stmt := statement.(type) {
+	case *ast.GotoStatement:
+		stmt.Program = program
+	case *ast.IfStatement:
+		// Handle GOTO statements in IF-THEN clauses
+		if stmt.ThenStatement != nil {
+			fe.setProgramReferenceForStatement(stmt.ThenStatement, program)
+		}
+	// Add other statement types that might contain GOTO statements as needed
 	}
 }

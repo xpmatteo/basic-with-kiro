@@ -949,16 +949,17 @@ func (f *IntFunction) Call(args []runtime.Value, env *runtime.Environment) (runt
 type RndFunction struct{}
 
 func (f *RndFunction) Name() string { return "RND" }
-func (f *RndFunction) ArgCount() int { return 0 }
+func (f *RndFunction) ArgCount() int { return 1 }
 
 func (f *RndFunction) Call(args []runtime.Value, env *runtime.Environment) (runtime.Value, error) {
 	validator := NewFunctionValidator("RND")
 	
-	if err := validator.ValidateArgumentCount(0, len(args)); err != nil {
+	if err := validator.ValidateArgumentCount(1, len(args)); err != nil {
 		return runtime.Value{}, err
 	}
 	
-	// Use the environment's random number generator
+	// In classic BASIC, RND(1) returns a random number between 0 and 1
+	// The argument is typically ignored in this implementation
 	result := env.Random()
 	return runtime.NewNumericValue(result), nil
 }

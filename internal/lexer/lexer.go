@@ -1,6 +1,9 @@
 package lexer
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // TokenType represents the type of a token
 type TokenType int
@@ -50,6 +53,7 @@ const (
 	COMMA     // ,
 	LPAREN    // (
 	RPAREN    // )
+	COLON     // :
 
 	// Line number
 	LINENUMBER
@@ -132,6 +136,8 @@ func (t TokenType) String() string {
 		return "LPAREN"
 	case RPAREN:
 		return "RPAREN"
+	case COLON:
+		return "COLON"
 	case LINENUMBER:
 		return "LINENUMBER"
 	default:
@@ -349,6 +355,8 @@ func (l *BasicLexer) NextToken() Token {
 		tok = l.makeSingleCharToken(LPAREN, startLine, startColumn)
 	case ')':
 		tok = l.makeSingleCharToken(RPAREN, startLine, startColumn)
+	case ':':
+		tok = l.makeSingleCharToken(COLON, startLine, startColumn)
 	case '"':
 		return l.readStringToken(startLine, startColumn)
 	case '\n':
@@ -375,7 +383,7 @@ func (l *BasicLexer) readStringToken(line, column int) Token {
 	value, ok := l.readString()
 	l.isAtLineStart = false
 	if !ok {
-		return Token{Type: ILLEGAL, Value: value, Line: line, Column: column}
+		return Token{Type: ILLEGAL, Value: fmt.Sprintf("unterminated string starting at line %d, column %d", line, column), Line: line, Column: column}
 	}
 	return Token{Type: STRING, Value: value, Line: line, Column: column}
 }

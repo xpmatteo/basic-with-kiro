@@ -58,18 +58,19 @@ func (p *BasicParser) ParseProgram() (*ast.Program, error) {
 		
 		// Expect line number
 		if p.curToken.Type != lexer.LINENUMBER && p.curToken.Type != lexer.NUMBER {
-			return nil, fmt.Errorf("expected line number at start of statement")
+			return nil, fmt.Errorf("expected line number at start of statement at line %d, column %d, found '%s' (%s)", 
+				p.curToken.Line, p.curToken.Column, p.curToken.Value, p.curToken.Type.String())
 		}
 		
 		// Parse line number
 		lineNumber, err := p.parseLineNumber()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("at line %d, column %d: %w", p.curToken.Line, p.curToken.Column, err)
 		}
 		
 		// Check for duplicate line numbers
 		if _, exists := program.Lines[lineNumber]; exists {
-			return nil, fmt.Errorf("duplicate line number: %d", lineNumber)
+			return nil, fmt.Errorf("duplicate line number: %d at line %d, column %d", lineNumber, p.curToken.Line, p.curToken.Column)
 		}
 		
 		// Set current line number for statement parsing
@@ -78,7 +79,22 @@ func (p *BasicParser) ParseProgram() (*ast.Program, error) {
 		// Parse the statement for this line
 		stmt, err := p.ParseStatement()
 		if err != nil {
-			return nil, fmt.Errorf("error parsing statement at line %d: %w", lineNumber, err)
+			return nil, fmt.Errorf("error parsing statement at BASIC line %d (source line %d, column %d): %w", 
+				lineNumber, p.curToken.Line, p.curToken.Column, err)
+		}
+		
+		// Handle multiple statements on the same line separated by colons
+		if p.curToken.Type == lexer.COLON {
+			// For now, we'll create a compound statement or handle it differently
+			// This is a simplified approach - in a full implementation, you might want
+			// to create a compound statement type or handle this differently
+			p.nextToken() // consume colon
+			
+			// If there's another statement after the colon, we need to handle it
+			// For now, let's skip to the next line number or EOF
+			for p.curToken.Type != lexer.EOF && p.curToken.Type != lexer.LINENUMBER {
+				p.nextToken()
+			}
 		}
 		
 		// Add to program
@@ -200,14 +216,15 @@ func (p *BasicParser) isTokenInList(tokenType lexer.TokenType, list []lexer.Toke
 // expectToken checks if current token matches expected type
 func (p *BasicParser) expectToken(expected lexer.TokenType, name string) error {
 	if p.curToken.Type != expected {
-		return fmt.Errorf("expected %s", name)
+		return fmt.Errorf("expected %s, found '%s' (%s) at line %d, column %d", 
+			name, p.curToken.Value, p.curToken.Type.String(), p.curToken.Line, p.curToken.Column)
 	}
 	return nil
 }
 
 // isEndOfStatement checks if we're at the end of a statement
 func (p *BasicParser) isEndOfStatement() bool {
-	return p.curToken.Type == lexer.EOF || p.curToken.Type == lexer.LINENUMBER
+	return p.curToken.Type == lexer.EOF || p.curToken.Type == lexer.LINENUMBER || p.curToken.Type == lexer.COLON
 }
 
 // parseExpressionList parses a comma-separated list of expressions
@@ -224,6 +241,36 @@ func (p *BasicParser) parseExpressionList() ([]ast.Expression, error) {
 	// Parse additional expressions separated by commas
 	for p.curToken.Type == lexer.COMMA {
 		p.nextToken() // consume comma
+		
+		expr, err := p.ParseExpression()
+		if err != nil {
+			return nil, err
+		}
+		expressions = append(expressions, expr)
+	}
+	
+	return expressions, nil
+}
+
+// parsePrintExpressionList parses expressions separated by commas or semicolons (for PRINT statements)
+func (p *BasicParser) parsePrintExpressionList() ([]ast.Expression, error) {
+	var expressions []ast.Expression
+	
+	// Parse first expression
+	expr, err := p.ParseExpression()
+	if err != nil {
+		return nil, err
+	}
+	expressions = append(expressions, expr)
+	
+	// Parse additional expressions separated by commas or semicolons
+	for p.curToken.Type == lexer.COMMA || p.curToken.Type == lexer.SEMICOLON {
+		p.nextToken() // consume separator
+		
+		// Check if we're at the end of the statement after the separator
+		if p.isEndOfStatement() {
+			break // Trailing separator is allowed in PRINT statements
+		}
 		
 		expr, err := p.ParseExpression()
 		if err != nil {
@@ -261,9 +308,10 @@ func (p *BasicParser) ParseStatement() (ast.Statement, error) {
 		// Treat numbers as identifiers for assignment (like variable names that are numbers)
 		return p.parseAssignmentStatement()
 	case lexer.EOF:
-		return nil, fmt.Errorf("unexpected end of input")
+		return nil, fmt.Errorf("unexpected end of input at line %d, column %d", p.curToken.Line, p.curToken.Column)
 	default:
-		return nil, fmt.Errorf("unknown statement type: %s", p.curToken.Value)
+		return nil, fmt.Errorf("unknown statement type '%s' (%s) at line %d, column %d", 
+			p.curToken.Value, p.curToken.Type.String(), p.curToken.Line, p.curToken.Column)
 	}
 }
 
@@ -280,10 +328,11 @@ func (p *BasicParser) parsePrintStatement() (ast.Statement, error) {
 		return ast.NewPrintStatement([]ast.Expression{}, nil), nil
 	}
 	
-	// Parse comma-separated expressions
-	expressions, err := p.parseExpressionList()
+	// Parse expressions separated by commas or semicolons
+	expressions, err := p.parsePrintExpressionList()
 	if err != nil {
-		return nil, fmt.Errorf("error parsing PRINT expressions: %w", err)
+		return nil, fmt.Errorf("error parsing PRINT expressions at line %d, column %d: %w", 
+			p.curToken.Line, p.curToken.Column, err)
 	}
 	
 	return ast.NewPrintStatement(expressions, nil), nil
@@ -292,7 +341,7 @@ func (p *BasicParser) parsePrintStatement() (ast.Statement, error) {
 // parseInputStatement parses an INPUT statement
 func (p *BasicParser) parseInputStatement() (ast.Statement, error) {
 	if p.curToken.Type != lexer.INPUT {
-		return nil, fmt.Errorf("expected INPUT")
+		return nil, fmt.Errorf("expected INPUT at line %d, column %d", p.curToken.Line, p.curToken.Column)
 	}
 	
 	p.nextToken() // consume INPUT
@@ -312,7 +361,8 @@ func (p *BasicParser) parseInputStatement() (ast.Statement, error) {
 	
 	// Expect variable name
 	if p.curToken.Type != lexer.IDENTIFIER {
-		return nil, fmt.Errorf("expected variable name in INPUT statement")
+		return nil, fmt.Errorf("expected variable name in INPUT statement, found '%s' (%s) at line %d, column %d", 
+			p.curToken.Value, p.curToken.Type.String(), p.curToken.Line, p.curToken.Column)
 	}
 	
 	variable := p.curToken.Value
@@ -347,10 +397,10 @@ func (p *BasicParser) parseGotoStatement() (ast.Statement, error) {
 	return ast.NewGotoStatement(lineNumber, nil), nil
 }
 
-// parseIfStatement parses an IF-THEN statement
+// parseIfStatement parses an IF-THEN or IF-GOTO statement
 func (p *BasicParser) parseIfStatement() (ast.Statement, error) {
 	if p.curToken.Type != lexer.IF {
-		return nil, fmt.Errorf("expected IF")
+		return nil, fmt.Errorf("expected IF at line %d, column %d", p.curToken.Line, p.curToken.Column)
 	}
 	
 	p.nextToken() // consume IF
@@ -361,17 +411,25 @@ func (p *BasicParser) parseIfStatement() (ast.Statement, error) {
 		return nil, fmt.Errorf("error parsing IF condition: %w", err)
 	}
 	
-	// Expect THEN
-	if p.curToken.Type != lexer.THEN {
-		return nil, fmt.Errorf("expected THEN after IF condition")
-	}
-	
-	p.nextToken() // consume THEN
-	
-	// Parse THEN statement
-	thenStatement, err := p.ParseStatement()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing THEN statement: %w", err)
+	// Check for THEN or GOTO
+	var thenStatement ast.Statement
+	if p.curToken.Type == lexer.THEN {
+		p.nextToken() // consume THEN
+		
+		// Parse THEN statement
+		thenStatement, err = p.ParseStatement()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing THEN statement: %w", err)
+		}
+	} else if p.curToken.Type == lexer.GOTO {
+		// Handle IF condition GOTO lineNumber
+		thenStatement, err = p.parseGotoStatement()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing GOTO statement in IF: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("expected THEN or GOTO after IF condition, found '%s' (%s) at line %d, column %d", 
+			p.curToken.Value, p.curToken.Type.String(), p.curToken.Line, p.curToken.Column)
 	}
 	
 	return ast.NewIfStatement(condition, thenStatement), nil
