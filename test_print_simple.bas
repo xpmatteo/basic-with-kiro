@@ -1,0 +1,2 @@
+10 NAME$ = "Alice"
+20 PRINT NAME$

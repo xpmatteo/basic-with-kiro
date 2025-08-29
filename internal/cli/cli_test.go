@@ -525,8 +525,9 @@ func TestCLI_FileExecution_BasicProgram(t *testing.T) {
 			tmpFile := createTempFile(t, tt.fileContent)
 			defer removeTempFile(t, tmpFile)
 
+			mockInput := &MockInputReader{}
 			mockOutput := &MockOutputWriter{}
-			fileExecutor := NewFileExecutor(mockOutput)
+			fileExecutor := NewFileExecutor(mockInput, mockOutput)
 			
 			err := fileExecutor.ExecuteFile(tmpFile, false)
 			
@@ -560,8 +561,9 @@ func TestCLI_FileExecution_DebugMode(t *testing.T) {
 	tmpFile := createTempFile(t, fileContent)
 	defer removeTempFile(t, tmpFile)
 
+	mockInput := &MockInputReader{}
 	mockOutput := &MockOutputWriter{}
-	fileExecutor := NewFileExecutor(mockOutput)
+	fileExecutor := NewFileExecutor(mockInput, mockOutput)
 	
 	err := fileExecutor.ExecuteFile(tmpFile, true) // Debug mode enabled
 	
@@ -639,8 +641,9 @@ func TestCLI_FileExecution_ErrorHandling(t *testing.T) {
 				filename = tmpFile
 			}
 
+			mockInput := &MockInputReader{}
 			mockOutput := &MockOutputWriter{}
-			fileExecutor := NewFileExecutor(mockOutput)
+			fileExecutor := NewFileExecutor(mockInput, mockOutput)
 			
 			err := fileExecutor.ExecuteFile(filename, false)
 			
@@ -670,8 +673,9 @@ func TestCLI_FileExecution_Integration(t *testing.T) {
 	tmpFile := createTempFile(t, fileContent)
 	defer removeTempFile(t, tmpFile)
 
+	mockInput := &MockInputReader{}
 	mockOutput := &MockOutputWriter{}
-	fileExecutor := NewFileExecutor(mockOutput)
+	fileExecutor := NewFileExecutor(mockInput, mockOutput)
 	
 	err := fileExecutor.ExecuteFile(tmpFile, false)
 	
@@ -702,8 +706,9 @@ func TestCLI_FileExecution_EmptyFile(t *testing.T) {
 	tmpFile := createTempFile(t, "")
 	defer removeTempFile(t, tmpFile)
 
+	mockInput := &MockInputReader{}
 	mockOutput := &MockOutputWriter{}
-	fileExecutor := NewFileExecutor(mockOutput)
+	fileExecutor := NewFileExecutor(mockInput, mockOutput)
 	
 	err := fileExecutor.ExecuteFile(tmpFile, false)
 	
@@ -719,8 +724,9 @@ func TestCLI_FileExecution_CommentsOnly(t *testing.T) {
 	tmpFile := createTempFile(t, fileContent)
 	defer removeTempFile(t, tmpFile)
 
+	mockInput := &MockInputReader{}
 	mockOutput := &MockOutputWriter{}
-	fileExecutor := NewFileExecutor(mockOutput)
+	fileExecutor := NewFileExecutor(mockInput, mockOutput)
 	
 	err := fileExecutor.ExecuteFile(tmpFile, false)
 	

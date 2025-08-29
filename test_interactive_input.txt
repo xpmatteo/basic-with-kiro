@@ -1,0 +1,5 @@
+10 INPUT X
+20 PRINT x
+run
+42
+exit

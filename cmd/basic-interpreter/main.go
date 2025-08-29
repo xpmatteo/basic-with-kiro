@@ -47,7 +47,7 @@ func main() {
 		}
 	} else {
 		// File execution mode
-		fileExecutor := cli.NewFileExecutor(output)
+		fileExecutor := cli.NewFileExecutor(input, output)
 		if err := fileExecutor.ExecuteFile(config.InputFile, config.DebugMode); err != nil {
 			fmt.Fprintf(os.Stderr, "Error executing file: %s\n", err.Error())
 			os.Exit(1)

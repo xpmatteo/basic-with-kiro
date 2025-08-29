@@ -41,6 +41,9 @@ func (fe *FileExecutor) ExecuteProgram(program map[int]string, debugMode bool) e
 	// Set output writer for all PRINT statements
 	fe.setPrintOutputWriters(astProgram)
 	
+	// Set input/output writers for all INPUT statements
+	fe.setInputOutputWriters(astProgram)
+	
 	// Create runtime environment
 	env := runtime.NewEnvironment()
 	
@@ -252,5 +255,27 @@ func (fe *FileExecutor) setPrintOutputWriterForStatement(statement ast.Statement
 			fe.setPrintOutputWriterForStatement(stmt.ThenStatement)
 		}
 	// Add other statement types that might contain PRINT statements as needed
+	}
+}
+
+// setInputOutputWriters sets the input/output writers for all INPUT statements in the program
+func (fe *FileExecutor) setInputOutputWriters(program *ast.Program) {
+	for _, statement := range program.Lines {
+		fe.setInputOutputWriterForStatement(statement)
+	}
+}
+
+// setInputOutputWriterForStatement recursively sets input/output writers for INPUT statements
+func (fe *FileExecutor) setInputOutputWriterForStatement(statement ast.Statement) {
+	switch stmt := statement.(type) {
+	case *ast.InputStatement:
+		stmt.Input = fe.input
+		stmt.Output = fe.output
+	case *ast.IfStatement:
+		// Handle INPUT statements in IF-THEN clauses
+		if stmt.ThenStatement != nil {
+			fe.setInputOutputWriterForStatement(stmt.ThenStatement)
+		}
+	// Add other statement types that might contain INPUT statements as needed
 	}
 }

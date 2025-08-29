@@ -1,0 +1,2 @@
+10 INPUT X
+20 PRINT X

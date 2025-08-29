@@ -8,12 +8,14 @@ import (
 
 // FileExecutor handles file-based program execution
 type FileExecutor struct {
+	input  InputReader
 	output OutputWriter
 }
 
 // NewFileExecutor creates a new file executor instance
-func NewFileExecutor(output OutputWriter) *FileExecutor {
+func NewFileExecutor(input InputReader, output OutputWriter) *FileExecutor {
 	return &FileExecutor{
+		input:  input,
 		output: output,
 	}
 }

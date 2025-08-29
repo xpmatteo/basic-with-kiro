@@ -209,7 +209,7 @@ func (im *InteractiveMode) runProgram() {
 	im.output.WriteLine(RunningProgramMessage)
 	
 	// Create a file executor to handle the execution logic
-	fileExecutor := NewFileExecutor(im.output)
+	fileExecutor := NewFileExecutor(im.input, im.output)
 	
 	// Execute the program using the same logic as file execution
 	if err := fileExecutor.ExecuteProgram(im.program, false); err != nil {

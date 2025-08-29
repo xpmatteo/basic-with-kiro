@@ -48,7 +48,8 @@ func executeProgram(t *testing.T, source string, debugMode bool) ([]string, erro
 	output := &MockOutputWriter{}
 	
 	// Use the file executor approach which handles the full pipeline
-	fileExecutor := cli.NewFileExecutor(output)
+	input := &MockInputReader{}
+	fileExecutor := cli.NewFileExecutor(input, output)
 	
 	// Create a temporary file with the source code
 	tmpFile := createTempBasicFile(t, source)
@@ -766,8 +767,9 @@ func TestIntegration_FileExecution(t *testing.T) {
 				// and we're running from internal/integration
 				t.Skip("Sample files not accessible from integration test directory")
 				
+				input := &MockInputReader{}
 				output := &MockOutputWriter{}
-				fileExecutor := cli.NewFileExecutor(output)
+				fileExecutor := cli.NewFileExecutor(input, output)
 				
 				err := fileExecutor.ExecuteFile("../../"+sample.filename, false)
 				require.NoError(t, err)
@@ -796,8 +798,9 @@ func TestIntegration_FileExecution(t *testing.T) {
 		tmpFile := createTempBasicFile(t, content)
 		defer removeTempFile(t, tmpFile)
 		
+		input := &MockInputReader{}
 		output := &MockOutputWriter{}
-		fileExecutor := cli.NewFileExecutor(output)
+		fileExecutor := cli.NewFileExecutor(input, output)
 		
 		err := fileExecutor.ExecuteFile(tmpFile, true) // Debug mode
 		require.NoError(t, err)
